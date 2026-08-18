@@ -38,7 +38,24 @@ funcionan también sin conexión (`file://`).
 | **Casas reales desiguales** | ✅ **Placidus** por iteración de semiarcos (validado), más **Porphyry**, **Casas Iguales** y **Signo Completo**. Ascendente y Medio Cielo calculados por longitud/latitud. |
 | **Búsqueda geográfica (geocoding)** | ✅ Buscador de ciudades vía Open-Meteo → autocompleta lat/lon y zona horaria IANA. El huso convierte la hora de nacimiento a UTC respetando el horario de verano histórico. |
 | **Interacción 3D (raycasting)** | ✅ Hover y clic sobre planetas natales y de tránsito despliegan una tarjeta con signo, casa activada e interpretación didáctica. |
+| **Motor de interpretaciones** | ✅ Significados de planetas, signos, casas y aspectos, con lecturas diferenciadas para la **carta natal** y para los **tránsitos**. |
 | **Control de tiempo** | ✅ Reproducción en tiempo real o acelerada (hora/día/semana/mes por segundo) y botón «Ahora». |
+
+### Interpretaciones (natal y tránsito)
+
+`js/data.js` incluye un corpus original en español (no reproduce fuentes
+externas) que combina la **función** de cada planeta con el **estilo** del signo
+y el **ámbito** de la casa, más el carácter de cada **aspecto**:
+
+- **Modo Natal** → tarjetas de planetas en su signo/casa y panel de **aspectos
+  natales** internos (p. ej. «Sol *cuadratura* Júpiter: fricción interna que,
+  bien trabajada, es un gran motor de logros»).
+- **Modo Tránsito** → cada planeta en movimiento explica qué **casa natal
+  activa** y su aspecto al planeta natal (p. ej. «Urano en tránsito *coopera con*
+  Sol natal… activa Casa 10 · Vocación»).
+
+Las lecturas aparecen al pasar el cursor por las tablas, al hacer clic en un
+planeta 3D y en las tarjetas de aspecto.
 
 ### Precisión verificada
 
