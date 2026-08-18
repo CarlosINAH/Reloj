@@ -317,10 +317,18 @@
     pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
   }
 
+  function visibleChain(o) {
+    while (o) { if (o.visible === false) return false; o = o.parent; }
+    return true;
+  }
+
   function pick() {
     raycaster.setFromCamera(pointer, camera);
     var hits = raycaster.intersectObjects(pickables, false);
-    return hits.length ? hits[0].object : null;
+    for (var i = 0; i < hits.length; i++) {
+      if (visibleChain(hits[i].object)) return hits[i].object; // ignora marcadores ocultos
+    }
+    return null;
   }
 
   function onPointerMove(ev) {

@@ -51,6 +51,8 @@
     return s.glyph + ' ' + Astro.formatDMS(lon).text + ' ' + s.name;
   }
 
+  function esc(s) { return (s || '').replace(/"/g, '&quot;'); }
+
   // --------------------- Tabla de efemérides (panel izq) ----------------
   function refreshEphemerisTable() {
     var tbody = $('transit-tbody');
@@ -62,7 +64,8 @@
       var dms = Astro.formatDMS(lon);
       var house = cusps ? Astro.houseOf(lon, cusps) : null;
       var retro = transit.retro[b];
-      rows += '<tr>' +
+      var tip = esc(Data.interpretTransit(b, s.name, house));
+      rows += '<tr title="' + tip + '">' +
         '<td><strong>' + Data.planetGlyph(b) + ' ' + b + '</strong></td>' +
         '<td>' + s.glyph + ' ' + dms.d + '°' + String(dms.m).padStart(2, '0') + "' <small>" + s.name + '</small></td>' +
         '<td>' + (house ? 'C' + house : '—') + '</td>' +
@@ -125,7 +128,6 @@
     renderNatalGrid();
     Scene.setNatalMarkers(natalT.positions);
     Scene.setHouses(houses);
-    rebuildAspects();
     applyViewMode();
     refreshEphemerisTable();
     toast('Carta natal calculada · ' + systemName(state.houseSystem), true);
@@ -146,7 +148,8 @@
       var dms = Astro.formatDMS(lon);
       var house = Astro.houseOf(lon, cusps);
       var retro = state.natal.retro[b] ? ' <span class="rx" style="color:#ff6b7a">℞</span>' : '';
-      html += '<div class="natal-item"><span><strong>' + Data.planetGlyph(b) + ' ' + b + '</strong>' + retro + '</span>' +
+      var tip = esc(Data.interpretNatal(b, s.name, house));
+      html += '<div class="natal-item" title="' + tip + '"><span><strong>' + Data.planetGlyph(b) + ' ' + b + '</strong>' + retro + '</span>' +
         '<span>' + s.glyph + ' ' + dms.d + '°' + String(dms.m).padStart(2, '0') +
         "'<span class=\"h\"> C" + house + '</span></span></div>';
     });
@@ -165,49 +168,77 @@
     return s.glyph + ' ' + dms.d + '°' + String(dms.m).padStart(2, '0') + "'";
   }
 
-  // ------------------- Aspectos tránsito → natal (panel) ----------------
+  // ---------------- Panel de aspectos (según el modo de vista) ----------
+  // En modo tránsito: aspectos Tránsito → Natal y qué casa natal activan.
+  // En modo natal: aspectos internos de la carta natal.
   function rebuildAspects() {
     var container = $('transit-aspects-container');
-    if (!state.natal) { container.innerHTML = '<div class="hint">Calcula tu carta natal para ver qué tránsitos la activan.</div>'; return; }
+    var titleEl = $('aspects-title');
+    if (!state.natal) {
+      if (titleEl) titleEl.textContent = 'Aspectos';
+      container.innerHTML = '<div class="hint">Calcula tu carta natal para leer sus aspectos y los tránsitos que la activan.</div>';
+      Scene.setAspectLines([]);
+      return;
+    }
+    if (state.mode === 'natal') { buildNatalAspects(container, titleEl); }
+    else { buildTransitAspects(container, titleEl); }
 
+    // Interacción tarjeta ↔ línea 3D (en ambos modos las líneas existen).
+    Array.prototype.forEach.call(container.querySelectorAll('.aspect-card'), function (card) {
+      var id = card.getAttribute('data-id');
+      card.addEventListener('mouseenter', function () { card.classList.add('active-highlight'); Scene.highlightAspect(id, true); });
+      card.addEventListener('mouseleave', function () { card.classList.remove('active-highlight'); Scene.highlightAspect(id, false); });
+    });
+  }
+
+  function buildTransitAspects(container, titleEl) {
+    if (titleEl) titleEl.textContent = 'Aspectos Tránsito → Natal';
     var filter = $('transit-filter').value;
     var slowSet = { 'Júpiter': 1, Saturno: 1, Urano: 1, Neptuno: 1, 'Plutón': 1 };
     var transitPlanets = Astro.BODIES.filter(function (p) { return filter === 'all' || slowSet[p]; });
-
     var tSet = {};
     transitPlanets.forEach(function (p) { tSet[p] = transit.positions[p]; });
     var aspects = Astro.findAspects(tSet, state.natal.positions, false);
-
     var cusps = state.natal.houses.cusps;
-    var html = '';
-    var specs = [];
+    var html = '', specs = [];
     aspects.forEach(function (asp, i) {
-      var id = 'asp-' + i;
-      var tP = asp.a, nP = asp.b, t = asp.type;
+      var id = 'asp-' + i, tP = asp.a, nP = asp.b, t = asp.type;
       var house = Astro.houseOf(transit.positions[tP], cusps);
       var hInfo = Data.HOUSES[house];
       html += '<div class="aspect-card ' + t.cls + '" data-id="' + id + '">' +
         '<strong style="color:#ffe600;">' + Data.planetGlyph(tP) + ' ' + tP + ' TR</strong> ' +
         t.name + ' <strong>' + Data.planetGlyph(nP) + ' ' + nP + ' natal</strong>' +
         ' <span class="orb">(orbe ' + asp.orb.toFixed(1) + '°)</span>' +
-        '<div class="hint" style="margin-top:3px">' + Data.ASPECTS[t.name].desc + '</div>' +
+        '<div class="hint" style="margin-top:3px">' + Data.interpretAspect(t.name, tP, nP, true) + '</div>' +
         '<div class="house-badge">Activa ' + (hInfo ? hInfo.name : 'Casa ' + house) + '</div>' +
         '</div>';
       specs.push({ id: id, a: tP, b: nP, kindA: 'transit', kindB: 'natal', color: t.color });
     });
-
-    if (!html) html = '<div class="hint">No hay aspectos mayores activos bajo este filtro.</div>';
-    container.innerHTML = html;
+    container.innerHTML = html || '<div class="hint">No hay aspectos mayores activos bajo este filtro.</div>';
     lastTransitNatalSpecs = specs;
+    Scene.setAspectLines(specs);
+  }
 
-    // Interacción tarjeta ↔ línea 3D.
-    Array.prototype.forEach.call(container.querySelectorAll('.aspect-card'), function (card) {
-      var id = card.getAttribute('data-id');
-      card.addEventListener('mouseenter', function () { card.classList.add('active-highlight'); if (state.mode === 'transit') Scene.highlightAspect(id, true); });
-      card.addEventListener('mouseleave', function () { card.classList.remove('active-highlight'); if (state.mode === 'transit') Scene.highlightAspect(id, false); });
+  function buildNatalAspects(container, titleEl) {
+    if (titleEl) titleEl.textContent = 'Aspectos Natales';
+    var aspects = Astro.findAspects(state.natal.positions, state.natal.positions, true);
+    var cusps = state.natal.houses.cusps;
+    var html = '', specs = [];
+    aspects.forEach(function (asp, i) {
+      var id = 'nat-' + i, aP = asp.a, bP = asp.b, t = asp.type;
+      var ha = Astro.houseOf(state.natal.positions[aP], cusps);
+      var hb = Astro.houseOf(state.natal.positions[bP], cusps);
+      html += '<div class="aspect-card ' + t.cls + '" data-id="' + id + '">' +
+        '<strong style="color:#00d4ff;">' + Data.planetGlyph(aP) + ' ' + aP + '</strong> ' +
+        t.name + ' <strong>' + Data.planetGlyph(bP) + ' ' + bP + '</strong>' +
+        ' <span class="orb">(orbe ' + asp.orb.toFixed(1) + '°)</span>' +
+        '<div class="hint" style="margin-top:3px">' + Data.interpretAspect(t.name, aP, bP, false) + '</div>' +
+        '<div class="house-badge">' + aP + ' C' + ha + ' · ' + bP + ' C' + hb + '</div>' +
+        '</div>';
+      specs.push({ id: id, a: aP, b: bP, kindA: 'transit', kindB: 'transit', color: t.color });
     });
-
-    if (state.mode === 'transit') Scene.setAspectLines(specs);
+    container.innerHTML = html || '<div class="hint">Sin aspectos mayores entre los planetas natales.</div>';
+    Scene.setAspectLines(specs);
   }
 
   // --------------------------- Vista 3D ---------------------------------
@@ -215,16 +246,11 @@
     if (state.mode === 'natal' && state.natal) {
       Scene.setTransitLongitudes(state.natal.positions, state.natal.retro);
       Scene.setNatalMarkersVisible(false);
-      // Aspectos internos natales entre las esferas.
-      var internal = Astro.findAspects(state.natal.positions, state.natal.positions, true);
-      Scene.setAspectLines(internal.map(function (asp, i) {
-        return { id: 'nat-' + i, a: asp.a, b: asp.b, kindA: 'transit', kindB: 'transit', color: asp.type.color };
-      }));
     } else {
       Scene.setTransitLongitudes(transit.positions, transit.retro);
       Scene.setNatalMarkersVisible(!!state.natal);
-      Scene.setAspectLines(state.natal ? lastTransitNatalSpecs : []);
     }
+    rebuildAspects(); // reconstruye panel + líneas 3D acordes al modo
   }
 
   // --------------------------- Tiempo real ------------------------------
@@ -307,7 +333,8 @@
 
   // --------------------------- Tooltip ----------------------------------
   function describe(name, kind) {
-    var isNatal = (kind === 'natal');
+    // En modo natal, las esferas (kind 'transit') muestran posiciones natales.
+    var isNatal = (kind === 'natal') || (state.mode === 'natal' && !!state.natal);
     var lon = isNatal ? state.natal.positions[name] : transit.positions[name];
     var s = Data.SIGNS[Astro.signIndex(lon)];
     var dms = Astro.formatDMS(lon);
@@ -317,12 +344,11 @@
 
     var meta = s.glyph + ' ' + dms.text + ' ' + s.name;
     if (house) meta += ' · Casa ' + house;
-    var interp = Data.interpret(name, s.name, house);
-    var houseCtx = '';
-    if (!isNatal && house) houseCtx = 'Como tránsito, activa la Casa ' + house + ' de tu carta: ' + (Data.HOUSES[house] ? Data.HOUSES[house].area : '');
+    var interp = isNatal ? Data.interpretNatal(name, s.name, house)
+                         : Data.interpretTransit(name, s.name, house);
     return {
       title: Data.planetGlyph(name) + ' ' + name + (isNatal ? ' (natal)' : ' (tránsito)'),
-      meta: meta, retro: retro, interp: houseCtx || interp
+      meta: meta, retro: retro, interp: interp
     };
   }
 
@@ -413,9 +439,7 @@
     $('btn-now').addEventListener('click', function () {
       state.simTime = new Date();
       transit = computeTransit(state.simTime);
-      Scene.setTransitLongitudes(transit.positions, transit.retro);
       refreshEphemerisTable();
-      if (state.natal) rebuildAspects();
       applyViewMode();
       updateClockReadout();
     });
