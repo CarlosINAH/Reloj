@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reloj Cósmico Geocéntrico 3D</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div id="canvas-container"></div>
+
+  <!-- Aviso si faltan librerías -->
+  <div id="lib-error"></div>
+
+  <!-- Tooltip / tarjeta de interpretación -->
+  <div id="tooltip"></div>
+  <div id="toast"></div>
+
+  <!-- Barra inferior: control de tiempo -->
+  <div id="controls-bar">
+    <span>Vista:</span>
+    <select id="view-mode-select" style="width:130px;">
+      <option value="transit">Tránsitos Actuales</option>
+      <option value="natal">Posiciones Natales</option>
+    </select>
+    <div class="divider"></div>
+    <button class="btn btn-ghost mini-btn" id="btn-toggle-orbit">▶ Reproducir</button>
+    <select id="speed-select" title="Velocidad de simulación">
+      <option value="realtime">Tiempo real</option>
+      <option value="hour">1 h / s</option>
+      <option value="day">1 día / s</option>
+      <option value="week">1 sem / s</option>
+      <option value="month">1 mes / s</option>
+    </select>
+    <button class="btn btn-ghost mini-btn" id="btn-now">Ahora</button>
+    <div class="divider"></div>
+    <span id="sim-clock"></span>
+  </div>
+
+  <!-- Panel izquierdo: efemérides -->
+  <div id="left-panel" class="ui-window">
+    <div class="panel-header header-left">
+      <span>EFEMÉRIDES &amp; ESTADO PLANETARIO</span><span class="chev">▼</span>
+    </div>
+    <div class="panel-content">
+      <div class="section-title">Posición · Casa · Directo/Retro</div>
+      <table>
+        <thead><tr><th>Planeta</th><th>Signo</th><th>Casa</th><th>Mov.</th></tr></thead>
+        <tbody id="transit-tbody"></tbody>
+      </table>
+      <div class="hint">Posiciones geocéntricas eclípticas de fecha (Astronomy Engine · VSOP87/ELP). La columna «Casa» aparece al calcular tu carta natal.</div>
+    </div>
+  </div>
+
+  <!-- Panel superior derecho: carta natal + geocoding -->
+  <div id="right-panel-top" class="ui-window">
+    <div class="panel-header header-natal">
+      <span>1. CARTA NATAL &amp; COORDENADAS</span><span class="chev">▼</span>
+    </div>
+    <div class="panel-content">
+      <div class="section-title">Búsqueda de ciudad</div>
+      <div class="geo-wrap">
+        <div class="form-row">
+          <input type="text" id="geo-search" placeholder="Ciudad de nacimiento (ej: Mérida)">
+          <button class="btn" id="btn-geo" style="width:auto; padding:7px 12px;">Buscar</button>
+        </div>
+        <div id="geo-results"></div>
+      </div>
+      <div class="hint" id="geo-city-label">Escribe una ciudad para autocompletar coordenadas y zona horaria.</div>
+
+      <div class="section-title">Datos de nacimiento</div>
+      <div class="form-row">
+        <label class="field">Fecha<input type="date" id="natal-date" value="1994-07-29"></label>
+        <label class="field">Hora local<input type="time" id="natal-time" value="06:00"></label>
+      </div>
+      <div class="form-row">
+        <label class="field">Latitud<input type="text" id="natal-lat" value="20.96"></label>
+        <label class="field">Longitud<input type="text" id="natal-lon" value="-89.62"></label>
+      </div>
+      <div class="form-row wrap">
+        <label class="field" style="flex:2">Zona horaria (IANA)<input type="text" id="natal-tz" placeholder="ej: America/Merida" value="America/Merida"></label>
+        <label class="field">UTC offset (h)<input type="text" id="natal-offset" placeholder="-6" value="-6"></label>
+      </div>
+      <div class="form-row wrap">
+        <label class="field" style="flex:2">Sistema de casas
+          <select id="house-system">
+            <option value="placidus">Placidus (real, desigual)</option>
+            <option value="porphyry">Porphyry (cuadrantes)</option>
+            <option value="equal">Casas Iguales</option>
+            <option value="whole">Signo Completo</option>
+          </select>
+        </label>
+      </div>
+      <button class="btn btn-pink" id="btn-calculate">Calcular Carta Natal &amp; Casas</button>
+
+      <div class="section-title">Ejes</div>
+      <div class="angles-row" id="natal-angles"><div class="hint">Sin calcular.</div></div>
+
+      <div class="section-title">Posiciones Natales en Casas</div>
+      <div id="natal-positions-container" class="natal-grid"><div class="hint">Sin calcular.</div></div>
+    </div>
+  </div>
+
+  <!-- Panel inferior derecho: tránsitos activos -->
+  <div id="right-panel-bottom" class="ui-window">
+    <div class="panel-header header-transit">
+      <span>2. TRÁNSITOS ACTIVOS &amp; CASAS</span><span class="chev">▼</span>
+    </div>
+    <div class="panel-content">
+      <div class="section-title">
+        <span>Aspectos Tránsito → Natal</span>
+        <select id="transit-filter" style="width:auto; padding:2px 4px; font-size:0.68rem;">
+          <option value="slow">Solo Planetas Lentos</option>
+          <option value="all">Todos los Planetas</option>
+        </select>
+      </div>
+      <div id="transit-aspects-container" style="display:flex; flex-direction:column; gap:6px;"></div>
+    </div>
+  </div>
+
+  <!-- Librerías locales (funcionan sin conexión / vía file://) -->
+  <script src="vendor/three.min.js"></script>
+  <script src="vendor/OrbitControls.js"></script>
+  <script src="vendor/astronomy.browser.min.js"></script>
+  <!-- Módulos de la aplicación -->
+  <script src="js/data.js"></script>
+  <script src="js/astro.js"></script>
+  <script src="js/scene.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
