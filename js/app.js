@@ -130,7 +130,55 @@
     Scene.setHouses(houses);
     applyViewMode();
     refreshEphemerisTable();
+    saveInputs();
     toast('Carta natal calculada · ' + systemName(state.houseSystem), true);
+  }
+
+  // ------------------- Persistencia y enlace para compartir -------------
+  var FIELDS = ['natal-date', 'natal-time', 'natal-lat', 'natal-lon', 'natal-tz', 'natal-offset'];
+
+  function collectInputs() {
+    var o = { hs: state.houseSystem };
+    FIELDS.forEach(function (id) { o[id] = $(id).value; });
+    var city = $('geo-search').value.trim();
+    if (city) o.city = city;
+    return o;
+  }
+
+  function saveInputs() {
+    var o = collectInputs();
+    try { localStorage.setItem('reloj-natal', JSON.stringify(o)); } catch (e) {}
+    // Actualiza la URL para poder compartir la carta (sin recargar).
+    var params = new URLSearchParams();
+    Object.keys(o).forEach(function (k) { if (o[k] !== '' && o[k] != null) params.set(k, o[k]); });
+    try { history.replaceState(null, '', location.pathname + '?' + params.toString()); } catch (e) {}
+  }
+
+  // Lee de la URL (prioridad) o de localStorage. Devuelve true si aplicó datos.
+  function loadInputs() {
+    var src = null;
+    var qs = new URLSearchParams(location.search);
+    if (qs.toString()) {
+      src = {}; qs.forEach(function (v, k) { src[k] = v; });
+    } else {
+      try { src = JSON.parse(localStorage.getItem('reloj-natal') || 'null'); } catch (e) { src = null; }
+    }
+    if (!src) return false;
+    FIELDS.forEach(function (id) { if (src[id] != null && src[id] !== '') $(id).value = src[id]; });
+    if (src.city) $('geo-search').value = src.city;
+    if (src.hs) { state.houseSystem = src.hs; $('house-system').value = src.hs; }
+    return true;
+  }
+
+  function shareLink() {
+    saveInputs();
+    var url = location.href;
+    var done = function () { toast('Enlace copiado al portapapeles ✓', true); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done, function () { toast('Copia el enlace desde la barra del navegador.'); });
+    } else {
+      toast('Copia el enlace desde la barra del navegador.');
+    }
   }
 
   function systemName(s) {
@@ -418,6 +466,7 @@
     });
 
     $('btn-calculate').addEventListener('click', onCalculate);
+    $('btn-share').addEventListener('click', shareLink);
     $('transit-filter').addEventListener('change', rebuildAspects);
     $('house-system').addEventListener('change', function () {
       state.houseSystem = $('house-system').value;
@@ -452,6 +501,9 @@
     });
 
     setInterval(tick, 200);
+
+    // Restaura la última carta (URL para compartir, o localStorage) y calcúlala.
+    if (loadInputs()) onCalculate();
   }
 
   init();

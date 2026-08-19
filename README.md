@@ -16,6 +16,21 @@ Abre **`index.html`** en un navegador moderno (Chrome, Firefox, Edge). No
 requiere servidor ni instalación: las librerías están incluidas en `vendor/` y
 funcionan también sin conexión (`file://`).
 
+### Publicarlo en línea (GitHub Pages)
+
+Como es un sitio estático, se publica gratis con GitHub Pages:
+
+1. Repo → **Settings** → **Pages**.
+2. En **Source** elige **Deploy from a branch**.
+3. Branch: **`main`**, carpeta **`/ (root)`** → **Save**.
+4. En ~1 minuto estará en `https://<usuario>.github.io/Reloj/`.
+
+### Archivo único (opcional)
+
+`node tools/build-standalone.mjs` genera **`reloj-standalone.html`** con todo
+embebido (CSS + librerías + módulos) para compartir o abrir sin la carpeta
+`vendor/`.
+
 > El **buscador de ciudades** (geocoding) es la única función que necesita
 > internet. Sin conexión puedes ingresar latitud/longitud y huso a mano.
 
@@ -40,6 +55,7 @@ funcionan también sin conexión (`file://`).
 | **Interacción 3D (raycasting)** | ✅ Hover y clic sobre planetas natales y de tránsito despliegan una tarjeta con signo, casa activada e interpretación didáctica. |
 | **Motor de interpretaciones** | ✅ Significados de planetas, signos, casas y aspectos, con lecturas diferenciadas para la **carta natal** y para los **tránsitos**. |
 | **Control de tiempo** | ✅ Reproducción en tiempo real o acelerada (hora/día/semana/mes por segundo) y botón «Ahora». |
+| **Guardar y compartir** | ✅ La carta se guarda en el navegador (localStorage) y se codifica en la URL: el botón «🔗 Compartir» copia un enlace que reabre tu carta ya calculada. |
 
 ### Interpretaciones (natal y tránsito)
 
