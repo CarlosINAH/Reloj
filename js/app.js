@@ -23,8 +23,8 @@
   var n360 = Astro.n360;
 
   // ------------------------------- Estado -------------------------------
+  // Siempre es una bi-rueda: tránsito (esferas en movimiento) + natal (fijo).
   var state = {
-    mode: 'transit',
     houseSystem: 'placidus',
     simTime: new Date(),
     playing: false,
@@ -107,10 +107,8 @@
     var timeVal = $('natal-time').value;
     var lat = parseFloat($('natal-lat').value);
     var lon = parseFloat($('natal-lon').value);
-    if (!dateVal || isNaN(lat) || isNaN(lon)) {
-      toast('Completa fecha, latitud y longitud.');
-      return;
-    }
+    if (!dateVal) { toast('Ingresa tu fecha de nacimiento.'); return; }
+    if (isNaN(lat) || isNaN(lon)) { toast('Elige tu lugar de nacimiento en el buscador.'); return; }
     var birthUTC = birthToUTC(dateVal, timeVal);
     if (isNaN(birthUTC.getTime())) { toast('Fecha u hora inválida.'); return; }
 
@@ -128,7 +126,7 @@
     renderNatalGrid();
     Scene.setNatalMarkers(natalT.positions);
     Scene.setHouses(houses);
-    applyViewMode();
+    refreshScene();
     refreshEphemerisTable();
     saveInputs();
     toast('Carta natal calculada · ' + systemName(state.houseSystem), true);
@@ -140,8 +138,8 @@
   function collectInputs() {
     var o = { hs: state.houseSystem };
     FIELDS.forEach(function (id) { o[id] = $(id).value; });
-    var city = $('geo-search').value.trim();
-    if (city) o.city = city;
+    var place = $('place-search').value.trim();
+    if (place) o.place = place;
     return o;
   }
 
@@ -165,7 +163,7 @@
     }
     if (!src) return false;
     FIELDS.forEach(function (id) { if (src[id] != null && src[id] !== '') $(id).value = src[id]; });
-    if (src.city) $('geo-search').value = src.city;
+    if (src.place) $('place-search').value = src.place;
     if (src.hs) { state.houseSystem = src.hs; $('house-system').value = src.hs; }
     return true;
   }
@@ -228,7 +226,7 @@
       Scene.setAspectLines([]);
       return;
     }
-    if (state.mode === 'natal') { buildNatalAspects(container, titleEl); }
+    if ($('transit-filter').value === 'natal') { buildNatalAspects(container, titleEl); }
     else { buildTransitAspects(container, titleEl); }
 
     // Interacción tarjeta ↔ línea 3D (en ambos modos las líneas existen).
@@ -283,22 +281,18 @@
         '<div class="hint" style="margin-top:3px">' + Data.interpretAspect(t.name, aP, bP, false) + '</div>' +
         '<div class="house-badge">' + aP + ' C' + ha + ' · ' + bP + ' C' + hb + '</div>' +
         '</div>';
-      specs.push({ id: id, a: aP, b: bP, kindA: 'transit', kindB: 'transit', color: t.color });
+      // Líneas entre los marcadores natales fijos (rueda interior).
+      specs.push({ id: id, a: aP, b: bP, kindA: 'natal', kindB: 'natal', color: t.color });
     });
     container.innerHTML = html || '<div class="hint">Sin aspectos mayores entre los planetas natales.</div>';
     Scene.setAspectLines(specs);
   }
 
-  // --------------------------- Vista 3D ---------------------------------
-  function applyViewMode() {
-    if (state.mode === 'natal' && state.natal) {
-      Scene.setTransitLongitudes(state.natal.positions, state.natal.retro);
-      Scene.setNatalMarkersVisible(false);
-    } else {
-      Scene.setTransitLongitudes(transit.positions, transit.retro);
-      Scene.setNatalMarkersVisible(!!state.natal);
-    }
-    rebuildAspects(); // reconstruye panel + líneas 3D acordes al modo
+  // -------- Bi-rueda: tránsito (móvil) + natal (fijo), siempre juntos -----
+  function refreshScene() {
+    Scene.setTransitLongitudes(transit.positions, transit.retro);
+    Scene.setNatalMarkersVisible(!!state.natal);
+    rebuildAspects(); // reconstruye panel + líneas 3D
   }
 
   // --------------------------- Tiempo real ------------------------------
@@ -311,19 +305,17 @@
     var dtSec = (now - lastTick) / 1000;
     lastTick = now;
 
-    if (state.mode === 'transit') {
-      if (state.speed === 'realtime') {
-        if (state.playing) state.simTime = new Date();
-      } else if (state.playing) {
-        state.simTime = new Date(state.simTime.getTime() + SPEED_DAYS[state.speed] * dtSec * 86400000);
-      }
-      if (state.playing) {
-        transit = computeTransit(state.simTime);
-        Scene.setTransitLongitudes(transit.positions, transit.retro);
-        refreshEphemerisTable();
-        // Reconstruir aspectos con menor frecuencia (cada ~1.5 s).
-        if (++aspectTickCounter >= 8) { aspectTickCounter = 0; if (state.natal) rebuildAspects(); }
-      }
+    if (state.speed === 'realtime') {
+      if (state.playing) state.simTime = new Date();
+    } else if (state.playing) {
+      state.simTime = new Date(state.simTime.getTime() + SPEED_DAYS[state.speed] * dtSec * 86400000);
+    }
+    if (state.playing) {
+      transit = computeTransit(state.simTime);
+      Scene.setTransitLongitudes(transit.positions, transit.retro);
+      refreshEphemerisTable();
+      // Reconstruir aspectos con menor frecuencia (cada ~1.5 s).
+      if (++aspectTickCounter >= 8) { aspectTickCounter = 0; if (state.natal) rebuildAspects(); }
     }
     updateClockReadout();
   }
@@ -331,58 +323,75 @@
   function updateClockReadout() {
     var d = state.simTime;
     var opts = { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' };
-    var label = (state.mode === 'natal') ? 'Carta Natal fija' :
-      (state.speed === 'realtime' && state.playing ? 'AHORA · ' : '') + d.toLocaleString('es', opts);
+    var label = (state.speed === 'realtime' && state.playing ? 'AHORA · ' : '') + d.toLocaleString('es', opts);
     $('sim-clock').textContent = label;
   }
 
-  // --------------------------- Geocoding --------------------------------
-  function doGeocode() {
-    var q = $('geo-search').value.trim();
-    if (!q) return;
-    var results = $('geo-results');
-    results.innerHTML = '<div class="geo-item">Buscando…</div>';
-    results.classList.add('show');
-    var url = 'https://geocoding-api.open-meteo.com/v1/search?count=6&language=es&format=json&name=' + encodeURIComponent(q);
-    fetch(url).then(function (r) { return r.json(); }).then(function (data) {
-      if (!data.results || !data.results.length) { results.innerHTML = '<div class="geo-item">Sin resultados.</div>'; return; }
-      results.innerHTML = '';
-      data.results.forEach(function (city) {
-        var el = document.createElement('div');
-        el.className = 'geo-item';
-        var admin = [city.admin1, city.country].filter(Boolean).join(', ');
-        el.innerHTML = '<strong>' + city.name + '</strong><small>' + admin +
-          ' · ' + city.latitude.toFixed(2) + ', ' + city.longitude.toFixed(2) +
-          (city.timezone ? ' · ' + city.timezone : '') + '</small>';
-        el.addEventListener('click', function () { pickCity(city); });
-        results.appendChild(el);
-      });
-    }).catch(function () {
-      results.innerHTML = '<div class="geo-item">Sin conexión: ingresa lat/lon manualmente.</div>';
+  // ----------------- Buscador de lugar (integrado + online) -------------
+  var placeTimer = null;
+
+  function renderPlaceResults(list, online) {
+    var box = $('place-results');
+    if (!list.length) { box.classList.remove('show'); box.innerHTML = ''; return; }
+    box.innerHTML = '';
+    list.forEach(function (c) {
+      var el = document.createElement('div');
+      el.className = 'geo-item';
+      el.innerHTML = '<strong>' + c.name + '</strong><small>' + (c.region || '') + '</small>';
+      el.addEventListener('click', function () { pickPlace(c); });
+      box.appendChild(el);
     });
+    if (online) {
+      var tag = document.createElement('div');
+      tag.className = 'geo-item'; tag.style.color = '#8895b5'; tag.style.cursor = 'default';
+      tag.innerHTML = '<small>Buscando más ciudades en línea…</small>';
+      box.appendChild(tag);
+    }
+    box.classList.add('show');
   }
 
-  function pickCity(city) {
-    $('natal-lat').value = city.latitude.toFixed(4);
-    $('natal-lon').value = city.longitude.toFixed(4);
-    if (city.timezone) {
-      $('natal-tz').value = city.timezone;
-      // Muestra el offset calculado para la fecha de nacimiento como referencia.
-      try {
+  function doPlaceSearch() {
+    var q = $('place-search').value.trim();
+    if (q.length < 2) { $('place-results').classList.remove('show'); return; }
+    var local = Cities.search(q, 8);
+    renderPlaceResults(local, true);
+    // Complemento en línea (si hay conexión); si falla, se queda con la lista local.
+    var url = 'https://geocoding-api.open-meteo.com/v1/search?count=6&language=es&format=json&name=' + encodeURIComponent(q);
+    fetch(url).then(function (r) { return r.json(); }).then(function (data) {
+      var extra = (data.results || []).map(function (c) {
+        return { name: c.name, region: [c.admin1, c.country].filter(Boolean).join(', '),
+                 lat: c.latitude, lon: c.longitude, tz: c.timezone };
+      }).filter(function (c) {
+        return !local.some(function (l) { return l.name === c.name && l.region === c.region; });
+      });
+      renderPlaceResults(local.concat(extra), false);
+    }).catch(function () { renderPlaceResults(local, false); });
+  }
+
+  function pickPlace(c) {
+    $('natal-lat').value = c.lat;
+    $('natal-lon').value = c.lon;
+    $('natal-tz').value = c.tz || '';
+    try {
+      if (c.tz) {
         var dv = $('natal-date').value || '2000-01-01';
-        var off = tzOffsetMinutes(new Date(dv + 'T12:00:00Z'), city.timezone) / 60;
-        $('natal-offset').value = off;
-      } catch (e) {}
-    }
-    $('geo-city-label').textContent = city.name + ' (' + (city.timezone || 'offset manual') + ')';
-    $('geo-results').classList.remove('show');
-    $('geo-search').value = city.name;
+        $('natal-offset').value = tzOffsetMinutes(new Date(dv + 'T12:00:00Z'), c.tz) / 60;
+      }
+    } catch (e) {}
+    $('place-search').value = c.name;
+    $('place-results').classList.remove('show');
+  }
+
+  // Aplica el lugar por defecto (Ciudad de México) sin calcular nada aún.
+  function applyDefaultPlace() {
+    var c = Cities.byName(Cities.DEFAULT);
+    if (c) { pickPlace(c); }
   }
 
   // --------------------------- Tooltip ----------------------------------
   function describe(name, kind) {
-    // En modo natal, las esferas (kind 'transit') muestran posiciones natales.
-    var isNatal = (kind === 'natal') || (state.mode === 'natal' && !!state.natal);
+    // Bi-rueda: las esferas son tránsito; los marcadores fijos son natales.
+    var isNatal = (kind === 'natal');
     var lon = isNatal ? state.natal.positions[name] : transit.positions[name];
     var s = Data.SIGNS[Astro.signIndex(lon)];
     var dms = Astro.formatDMS(lon);
@@ -473,10 +482,9 @@
       if (state.natal) onCalculate();
     });
 
+    // Ángulo de cámara (Carta cenital / 3D)
     $('view-mode-select').addEventListener('change', function () {
-      state.mode = $('view-mode-select').value;
-      applyViewMode();
-      updateClockReadout();
+      Scene.setCameraMode(this.value);
     });
 
     $('btn-toggle-orbit').addEventListener('click', function () {
@@ -489,21 +497,35 @@
       state.simTime = new Date();
       transit = computeTransit(state.simTime);
       refreshEphemerisTable();
-      applyViewMode();
+      refreshScene();
       updateClockReadout();
     });
 
-    // Geocoding
-    $('btn-geo').addEventListener('click', doGeocode);
-    $('geo-search').addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); doGeocode(); } });
+    // Buscador de lugar (integrado + online)
+    $('place-search').addEventListener('input', function () {
+      clearTimeout(placeTimer);
+      placeTimer = setTimeout(doPlaceSearch, 220);
+    });
+    $('place-search').addEventListener('focus', doPlaceSearch);
     document.addEventListener('click', function (ev) {
-      if (!ev.target.closest('.geo-wrap')) $('geo-results').classList.remove('show');
+      if (!ev.target.closest('.geo-wrap')) $('place-results').classList.remove('show');
     });
 
     setInterval(tick, 200);
 
-    // Restaura la última carta (URL para compartir, o localStorage) y calcúlala.
-    if (loadInputs()) onCalculate();
+    // Colapsa los paneles en pantallas pequeñas para no tapar la escena.
+    if (window.innerWidth < 760) {
+      Array.prototype.forEach.call(document.querySelectorAll('.ui-window'), function (w) {
+        w.classList.add('collapsed');
+      });
+    }
+
+    // Restaura la última carta (URL o localStorage). Si no hay, usa CDMX por defecto.
+    if (loadInputs()) {
+      if ($('natal-date').value) onCalculate();
+    } else {
+      applyDefaultPlace();
+    }
   }
 
   init();

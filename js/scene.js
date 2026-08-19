@@ -104,6 +104,7 @@
     renderer.domElement.addEventListener('pointerdown', onPointerDown);
     window.addEventListener('resize', onResize);
 
+    setCameraMode('chart'); // por defecto: vista tipo carta natal
     animate();
   }
 
@@ -394,6 +395,17 @@
     if (o) controls.target.lerp(o.mesh.position.clone().multiplyScalar(0.4), 0.5);
   }
 
+  // Ángulo de cámara: 'chart' = cenital (parece una carta natal), '3d' = perspectiva.
+  function setCameraMode(mode) {
+    controls.target.set(0, 0, 0);
+    if (mode === '3d') {
+      camera.position.set(0, 118, 150);
+    } else {
+      camera.position.set(0, 210, 0.01); // casi cenital, mirando hacia abajo
+    }
+    controls.update();
+  }
+
   window.Scene = {
     init: init,
     setTransitLongitudes: setTransitLongitudes,
@@ -402,6 +414,7 @@
     setHouses: setHouses,
     setAspectLines: setAspectLines,
     highlightAspect: highlightAspect,
-    focusPlanet: focusPlanet
+    focusPlanet: focusPlanet,
+    setCameraMode: setCameraMode
   };
 })();
