@@ -55,6 +55,8 @@ embebido (CSS + librerías + módulos) para compartir o abrir sin la carpeta
 | **Vista tipo carta + móvil** | ✅ Cámara cenital que se lee como una carta natal (bi-rueda: natal fijo + tránsito en movimiento, juntos) y opción 3D. Interfaz adaptada a móvil con paneles colapsables. |
 | **Interacción 3D (raycasting)** | ✅ Hover y clic sobre planetas natales y de tránsito despliegan una tarjeta con signo, casa activada e interpretación didáctica. |
 | **Motor de interpretaciones** | ✅ Significados de planetas, signos, casas y aspectos, con lecturas diferenciadas para la **carta natal** y para los **tránsitos**. |
+| **Aspectos mayores y menores** | ✅ Mayores (conjunción, oposición, cuadratura, trígono, sextil) y **menores** (semisextil, semicuadratura, quintil, sesquicuadratura, quincuncio), con líneas más tenues y opción para ocultarlos. |
+| **Signo solar al centro** | ✅ En el centro de la carta aparece el **Sol** del consultante con su signo y una descripción de su **luz** y su **sombra**. |
 | **Control de tiempo** | ✅ Reproducción en tiempo real o acelerada (hora/día/semana/mes por segundo) y botón «Ahora». |
 | **Guardar y compartir** | ✅ La carta se guarda en el navegador (localStorage) y se codifica en la URL: el botón «🔗 Compartir» copia un enlace que reabre tu carta ya calculada. |
 

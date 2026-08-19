@@ -18,6 +18,7 @@
   var pickables = [];    // meshes con userData.planet / kind
   var raycaster, pointer = new THREE.Vector2();
   var hoverName = null;
+  var hubEl = null; // tarjeta HTML del signo solar, anclada al centro de la carta
   var callbacks = { onHover: function () {}, onSelect: function () {} };
 
   // Radios de órbita (geocéntrico, puramente visual pero ordenado por distancia).
@@ -276,17 +277,19 @@
     housesGroup.add(lbl);
   }
 
-  // Reemplaza las líneas de aspecto. specs: [{a, b, kindA, kindB, color}]
+  // Reemplaza las líneas de aspecto. specs: [{a, b, kindA, kindB, color, minor}]
   function setAspectLines(specs) {
     aspectGroup.clear();
     aspectLines = [];
     specs.forEach(function (s) {
       var geom = new THREE.BufferGeometry();
       geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+      var base = s.minor ? 0.2 : 0.45; // los menores se dibujan más tenues
       var line = new THREE.Line(geom, new THREE.LineBasicMaterial({
-        color: s.color, transparent: true, opacity: 0.4
+        color: s.color, transparent: true, opacity: base
       }));
       line.userData.id = s.id;
+      line.userData.base = base;
       aspectGroup.add(line);
       aspectLines.push({
         line: line,
@@ -306,7 +309,7 @@
   function highlightAspect(id, on) {
     aspectLines.forEach(function (al) {
       if (al.line.userData.id === id) {
-        al.line.material.opacity = on ? 1.0 : 0.4;
+        al.line.material.opacity = on ? 1.0 : al.line.userData.base;
       }
     });
   }
@@ -387,7 +390,16 @@
 
     controls.update();
     renderer.render(scene, camera);
+
+    // Ancla la tarjeta del signo solar al centro (origen) de la carta.
+    if (hubEl && hubEl.style.display !== 'none') {
+      var v = new THREE.Vector3(0, 0, 0).project(camera);
+      hubEl.style.left = ((v.x * 0.5 + 0.5) * window.innerWidth) + 'px';
+      hubEl.style.top = ((-v.y * 0.5 + 0.5) * window.innerHeight) + 'px';
+    }
   }
+
+  function attachHub(el) { hubEl = el; }
 
   // Enfoca suavemente un planeta (para clic desde la lista).
   function focusPlanet(name) {
@@ -415,6 +427,7 @@
     setAspectLines: setAspectLines,
     highlightAspect: highlightAspect,
     focusPlanet: focusPlanet,
-    setCameraMode: setCameraMode
+    setCameraMode: setCameraMode,
+    attachHub: attachHub
   };
 })();

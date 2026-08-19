@@ -140,7 +140,23 @@
       transit: 'abre una ventana favorable, fácil de aprovechar.' },
     'Sextil':     { angle: 60,  nature: 'armónico', keyword: 'oportunidad',             verbPair: 'coopera con',
       natal: 'Potencial de talento que se activa con un poco de iniciativa.',
-      transit: 'ofrece una oportunidad que rinde fruto si tomas la iniciativa.' }
+      transit: 'ofrece una oportunidad que rinde fruto si tomas la iniciativa.' },
+    // Aspectos menores (matices más sutiles)
+    'Quincuncio':       { angle: 150, nature: 'menor', keyword: 'ajuste incómodo', verbPair: 'desajusta a',
+      natal: 'Energías que no se entienden entre sí; exigen adaptación constante.',
+      transit: 'pide reajustes entre áreas que no encajan del todo.' },
+    'Sesquicuadratura': { angle: 135, nature: 'menor', keyword: 'tensión intermitente', verbPair: 'presiona levemente a',
+      natal: 'Tensión que aflora a ratos, sobre todo bajo presión.',
+      transit: 'irritación menor que empuja a resolver algo pendiente.' },
+    'Semicuadratura':   { angle: 45,  nature: 'menor', keyword: 'roce menor', verbPair: 'irrita a',
+      natal: 'Fricción pequeña que genera cierta inquietud o impaciencia.',
+      transit: 'roce leve que pide un pequeño ajuste.' },
+    'Quintil':          { angle: 72,  nature: 'menor', keyword: 'talento creativo', verbPair: 'inspira a',
+      natal: 'Don creativo o habilidad especial, poco convencional.',
+      transit: 'chispa de ingenio o inspiración creativa.' },
+    'Semisextil':       { angle: 30,  nature: 'menor', keyword: 'ajuste sutil', verbPair: 'roza a',
+      natal: 'Conexión leve entre energías vecinas; integración gradual.',
+      transit: 'matiz sutil, fácil de pasar por alto.' }
   };
 
   function sign(name) { return SIGNS.find(function (s) { return s.name === name; }); }
