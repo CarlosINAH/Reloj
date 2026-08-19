@@ -55,6 +55,25 @@
     </div>
   </div>
 
+  <!-- Panel inferior izquierdo: aspectos (panel aparte) -->
+  <div id="left-panel-bottom" class="ui-window">
+    <div class="panel-header header-aspect">
+      <span>ASPECTOS</span><span class="chev">▼</span>
+    </div>
+    <div class="panel-content">
+      <div class="section-title">
+        <span id="aspects-title">Aspectos</span>
+        <select id="aspect-scope" style="width:auto; padding:2px 4px; font-size:0.68rem;">
+          <option value="natal">Natales</option>
+          <option value="transit">Tránsito → Natal</option>
+        </select>
+      </div>
+      <div class="hint">Haz clic en cada símbolo para mostrar u ocultar ese aspecto.</div>
+      <div id="aspect-chips" class="aspect-chips glyphs"></div>
+      <div id="transit-aspects-container" style="display:flex; flex-direction:column; gap:6px;"></div>
+    </div>
+  </div>
+
   <!-- Panel superior derecho: carta natal -->
   <div id="right-panel-top" class="ui-window">
     <div class="panel-header header-natal">
@@ -104,24 +123,14 @@
     </div>
   </div>
 
-  <!-- Panel inferior derecho: tránsitos activos -->
+  <!-- Panel inferior derecho: casas · signos · planetas -->
   <div id="right-panel-bottom" class="ui-window">
     <div class="panel-header header-transit">
-      <span>2. TRÁNSITOS ACTIVOS &amp; CASAS</span><span class="chev">▼</span>
+      <span>CASAS · SIGNOS · PLANETAS</span><span class="chev">▼</span>
     </div>
     <div class="panel-content">
-      <div class="section-title">
-        <span id="aspects-title">Aspectos Tránsito → Natal</span>
-        <span style="display:flex; gap:8px; align-items:center;">
-          <label class="mini-check"><input type="checkbox" id="minor-toggle" checked> menores</label>
-          <select id="transit-filter" style="width:auto; padding:2px 4px; font-size:0.68rem;">
-            <option value="slow">Tránsitos: lentos</option>
-            <option value="all">Tránsitos: todos</option>
-            <option value="natal">Aspectos natales</option>
-          </select>
-        </span>
-      </div>
-      <div id="transit-aspects-container" style="display:flex; flex-direction:column; gap:6px;"></div>
+      <div class="section-title">Signo en cúspide y planetas por casa</div>
+      <div id="houses-summary" class="houses-summary glyphs"><div class="hint">Calcula tu carta para ver las 12 casas.</div></div>
     </div>
   </div>
 

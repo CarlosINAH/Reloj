@@ -29,10 +29,10 @@
     simTime: new Date(),
     playing: false,
     speed: 'realtime',     // realtime | hour | day | week | month
+    aspectScope: 'natal',  // natal | transit  (panel de aspectos)
     natal: null            // { positions, retro, houses, meta }
   };
   var transit = { positions: {}, retro: {}, speed: {} };
-  var lastTransitNatalSpecs = [];
   var tooltipPinned = false;
 
   // --------------------------- Cálculo tránsito -------------------------
@@ -125,6 +125,7 @@
 
     renderNatalGrid();
     updateSunHub();
+    renderHousesSummary();
     Scene.setNatalMarkers(natalT.positions);
     Scene.setHouses(houses);
     refreshScene();
@@ -234,19 +235,76 @@
   // ---------------- Panel de aspectos (según el modo de vista) ----------
   // En modo tránsito: aspectos Tránsito → Natal y qué casa natal activan.
   // En modo natal: aspectos internos de la carta natal.
+  // Tipos de aspecto activados por el usuario (clic en los chips).
+  var aspectEnabled = {};
+  Astro.ASPECT_TYPES.forEach(function (t) { aspectEnabled[t.name] = !t.minor; }); // mayores on, menores off
+
+  // Calcula todos los aspectos del ámbito actual (mayores + menores).
+  function computeScopeAspects() {
+    if (!state.natal) return [];
+    if (state.aspectScope === 'transit') {
+      var tSet = {};
+      Astro.BODIES.forEach(function (p) { tSet[p] = transit.positions[p]; });
+      return Astro.findAspects(tSet, state.natal.positions, false, true);
+    }
+    return Astro.findAspects(state.natal.positions, state.natal.positions, true, true);
+  }
+
   function rebuildAspects() {
     var container = $('transit-aspects-container');
     var titleEl = $('aspects-title');
+    var chipsEl = $('aspect-chips');
     if (!state.natal) {
       if (titleEl) titleEl.textContent = 'Aspectos';
-      container.innerHTML = '<div class="hint">Calcula tu carta natal para leer sus aspectos y los tránsitos que la activan.</div>';
+      chipsEl.innerHTML = '';
+      container.innerHTML = '<div class="hint">Calcula tu carta para ver sus aspectos.</div>';
       Scene.setAspectLines([]);
       return;
     }
-    if ($('transit-filter').value === 'natal') { buildNatalAspects(container, titleEl); }
-    else { buildTransitAspects(container, titleEl); }
+    var isTransit = state.aspectScope === 'transit';
+    if (titleEl) titleEl.textContent = isTransit ? 'Tránsito → Natal' : 'Aspectos natales';
 
-    // Interacción tarjeta ↔ línea 3D (en ambos modos las líneas existen).
+    var all = computeScopeAspects();
+
+    // Conteo por tipo para los chips.
+    var counts = {};
+    all.forEach(function (a) { counts[a.type.name] = (counts[a.type.name] || 0) + 1; });
+    renderAspectChips(chipsEl, counts);
+
+    // Filtra por tipos activados.
+    var shown = all.filter(function (a) { return aspectEnabled[a.type.name]; });
+    var cusps = state.natal.houses.cusps;
+    var html = '', specs = [];
+    shown.forEach(function (asp, i) {
+      var id = 'asp-' + i, t = asp.type;
+      var card, spec;
+      if (isTransit) {
+        var tP = asp.a, nP = asp.b;
+        var house = Astro.houseOf(transit.positions[tP], cusps);
+        card = '<div class="aspect-card ' + t.cls + '" data-id="' + id + '">' +
+          '<strong style="color:#ffe600;">' + t.sym + ' ' + Data.planetGlyph(tP) + ' ' + tP + ' TR</strong> ' +
+          t.name + ' <strong>' + Data.planetGlyph(nP) + ' ' + nP + '</strong>' +
+          ' <span class="orb">(' + asp.orb.toFixed(1) + '°)</span>' +
+          '<div class="hint" style="margin-top:3px">' + Data.interpretAspect(t.name, tP, nP, true) + '</div>' +
+          '<div class="house-badge">Activa Casa ' + house + '</div></div>';
+        spec = { id: id, a: tP, b: nP, kindA: 'transit', kindB: 'natal', color: t.color, minor: t.minor };
+      } else {
+        var aP = asp.a, bP = asp.b;
+        var ha = Astro.houseOf(state.natal.positions[aP], cusps);
+        var hb = Astro.houseOf(state.natal.positions[bP], cusps);
+        card = '<div class="aspect-card ' + t.cls + '" data-id="' + id + '">' +
+          '<strong style="color:#00d4ff;">' + t.sym + ' ' + Data.planetGlyph(aP) + ' ' + aP + '</strong> ' +
+          t.name + ' <strong>' + Data.planetGlyph(bP) + ' ' + bP + '</strong>' +
+          ' <span class="orb">(' + asp.orb.toFixed(1) + '°)</span>' +
+          '<div class="hint" style="margin-top:3px">' + Data.interpretAspect(t.name, aP, bP, false) + '</div>' +
+          '<div class="house-badge">' + aP + ' C' + ha + ' · ' + bP + ' C' + hb + '</div></div>';
+        spec = { id: id, a: aP, b: bP, kindA: 'natal', kindB: 'natal', color: t.color, minor: t.minor };
+      }
+      html += card; specs.push(spec);
+    });
+    container.innerHTML = html || '<div class="hint">Ningún aspecto de los tipos activados. Activa más símbolos arriba.</div>';
+    Scene.setAspectLines(specs);
+
     Array.prototype.forEach.call(container.querySelectorAll('.aspect-card'), function (card) {
       var id = card.getAttribute('data-id');
       card.addEventListener('mouseenter', function () { card.classList.add('active-highlight'); Scene.highlightAspect(id, true); });
@@ -254,57 +312,49 @@
     });
   }
 
-  function minorOn() { return $('minor-toggle').checked; }
-
-  function buildTransitAspects(container, titleEl) {
-    if (titleEl) titleEl.textContent = 'Aspectos Tránsito → Natal';
-    var filter = $('transit-filter').value;
-    var slowSet = { 'Júpiter': 1, Saturno: 1, Urano: 1, Neptuno: 1, 'Plutón': 1 };
-    var transitPlanets = Astro.BODIES.filter(function (p) { return filter === 'all' || slowSet[p]; });
-    var tSet = {};
-    transitPlanets.forEach(function (p) { tSet[p] = transit.positions[p]; });
-    var aspects = Astro.findAspects(tSet, state.natal.positions, false, minorOn());
-    var cusps = state.natal.houses.cusps;
-    var html = '', specs = [];
-    aspects.forEach(function (asp, i) {
-      var id = 'asp-' + i, tP = asp.a, nP = asp.b, t = asp.type;
-      var house = Astro.houseOf(transit.positions[tP], cusps);
-      var hInfo = Data.HOUSES[house];
-      html += '<div class="aspect-card ' + t.cls + '" data-id="' + id + '">' +
-        '<strong style="color:#ffe600;">' + Data.planetGlyph(tP) + ' ' + tP + ' TR</strong> ' +
-        t.name + ' <strong>' + Data.planetGlyph(nP) + ' ' + nP + ' natal</strong>' +
-        ' <span class="orb">(orbe ' + asp.orb.toFixed(1) + '°)</span>' +
-        '<div class="hint" style="margin-top:3px">' + Data.interpretAspect(t.name, tP, nP, true) + '</div>' +
-        '<div class="house-badge">Activa ' + (hInfo ? hInfo.name : 'Casa ' + house) + '</div>' +
-        '</div>';
-      specs.push({ id: id, a: tP, b: nP, kindA: 'transit', kindB: 'natal', color: t.color, minor: t.minor });
+  // Chips clicables por tipo de aspecto (símbolo + conteo).
+  function renderAspectChips(el, counts) {
+    el.innerHTML = '';
+    Astro.ASPECT_TYPES.forEach(function (t) {
+      var n = counts[t.name] || 0;
+      var chip = document.createElement('div');
+      var hex = '#' + t.color.toString(16).padStart(6, '0');
+      chip.className = 'aspect-chip' + (aspectEnabled[t.name] ? ' on' : '') + (n === 0 ? ' dim' : '');
+      chip.style.color = hex;
+      chip.title = t.name + (t.minor ? ' (menor)' : '');
+      chip.innerHTML = '<span class="sym">' + t.sym + '</span>' +
+        '<span style="color:#dfe4f2">' + t.name + '</span><span class="cnt">' + n + '</span>';
+      chip.addEventListener('click', function () {
+        aspectEnabled[t.name] = !aspectEnabled[t.name];
+        rebuildAspects();
+      });
+      el.appendChild(chip);
     });
-    container.innerHTML = html || '<div class="hint">No hay aspectos mayores activos bajo este filtro.</div>';
-    lastTransitNatalSpecs = specs;
-    Scene.setAspectLines(specs);
   }
 
-  function buildNatalAspects(container, titleEl) {
-    if (titleEl) titleEl.textContent = 'Aspectos Natales';
-    var aspects = Astro.findAspects(state.natal.positions, state.natal.positions, true, minorOn());
+  // ---------------- Resumen de casas (signo + planetas) ------------------
+  function renderHousesSummary() {
+    var box = $('houses-summary');
+    if (!state.natal) { box.innerHTML = '<div class="hint">Calcula tu carta para ver las 12 casas.</div>'; return; }
     var cusps = state.natal.houses.cusps;
-    var html = '', specs = [];
-    aspects.forEach(function (asp, i) {
-      var id = 'nat-' + i, aP = asp.a, bP = asp.b, t = asp.type;
-      var ha = Astro.houseOf(state.natal.positions[aP], cusps);
-      var hb = Astro.houseOf(state.natal.positions[bP], cusps);
-      html += '<div class="aspect-card ' + t.cls + '" data-id="' + id + '">' +
-        '<strong style="color:#00d4ff;">' + Data.planetGlyph(aP) + ' ' + aP + '</strong> ' +
-        t.name + ' <strong>' + Data.planetGlyph(bP) + ' ' + bP + '</strong>' +
-        ' <span class="orb">(orbe ' + asp.orb.toFixed(1) + '°)</span>' +
-        '<div class="hint" style="margin-top:3px">' + Data.interpretAspect(t.name, aP, bP, false) + '</div>' +
-        '<div class="house-badge">' + aP + ' C' + ha + ' · ' + bP + ' C' + hb + '</div>' +
-        '</div>';
-      // Líneas entre los marcadores natales fijos (rueda interior).
-      specs.push({ id: id, a: aP, b: bP, kindA: 'natal', kindB: 'natal', color: t.color, minor: t.minor });
+    // Planetas en cada casa.
+    var inHouse = {};
+    Astro.BODIES.forEach(function (b) {
+      var h = Astro.houseOf(state.natal.positions[b], cusps);
+      (inHouse[h] = inHouse[h] || []).push(Data.planetGlyph(b));
     });
-    container.innerHTML = html || '<div class="hint">Sin aspectos mayores entre los planetas natales.</div>';
-    Scene.setAspectLines(specs);
+    var html = '';
+    for (var i = 0; i < 12; i++) {
+      var num = i + 1;
+      var s = Data.SIGNS[Astro.signIndex(cusps[i])];
+      var angle = (i === 0 || i === 3 || i === 6 || i === 9) ? ' angle' : '';
+      var plns = (inHouse[num] || []).join(' ');
+      html += '<div class="house-row' + angle + '">' +
+        '<span class="hn">C' + num + '</span>' +
+        '<span class="sign">' + s.glyph + ' ' + s.name + '</span>' +
+        '<span class="plns" style="color:#ffe066">' + plns + '</span></div>';
+    }
+    box.innerHTML = html;
   }
 
   // -------- Bi-rueda: tránsito (móvil) + natal (fijo), siempre juntos -----
@@ -496,8 +546,10 @@
 
     $('btn-calculate').addEventListener('click', onCalculate);
     $('btn-share').addEventListener('click', shareLink);
-    $('transit-filter').addEventListener('change', rebuildAspects);
-    $('minor-toggle').addEventListener('change', rebuildAspects);
+    $('aspect-scope').addEventListener('change', function () {
+      state.aspectScope = this.value;
+      rebuildAspects();
+    });
     $('house-system').addEventListener('change', function () {
       state.houseSystem = $('house-system').value;
       if (state.natal) onCalculate();

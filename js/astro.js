@@ -166,17 +166,17 @@
   // --------------------------- Aspectos ---------------------------------
   var ASPECT_TYPES = [
     // Mayores
-    { name: 'Conjunción', angle: 0,   orb: 6,   cls: 'conj', color: 0xffe600, minor: false },
-    { name: 'Oposición',  angle: 180, orb: 6,   cls: 'opp',  color: 0xff3344, minor: false },
-    { name: 'Cuadratura', angle: 90,  orb: 5,   cls: 'sq',   color: 0xff6600, minor: false },
-    { name: 'Trígono',    angle: 120, orb: 5,   cls: 'tri',  color: 0x00ffcc, minor: false },
-    { name: 'Sextil',     angle: 60,  orb: 4,   cls: 'sex',  color: 0x00d4ff, minor: false },
+    { name: 'Conjunción', sym: '☌', angle: 0,   orb: 6,   cls: 'conj', color: 0xffe600, minor: false },
+    { name: 'Oposición',  sym: '☍', angle: 180, orb: 6,   cls: 'opp',  color: 0xff3344, minor: false },
+    { name: 'Cuadratura', sym: '□', angle: 90,  orb: 5,   cls: 'sq',   color: 0xff6600, minor: false },
+    { name: 'Trígono',    sym: '△', angle: 120, orb: 5,   cls: 'tri',  color: 0x00ffcc, minor: false },
+    { name: 'Sextil',     sym: '⚹', angle: 60,  orb: 4,   cls: 'sex',  color: 0x00d4ff, minor: false },
     // Menores (orbes pequeños, líneas más tenues)
-    { name: 'Quincuncio',     angle: 150, orb: 2.0, cls: 'min', color: 0xb388ff, minor: true },
-    { name: 'Sesquicuadratura', angle: 135, orb: 1.5, cls: 'min', color: 0xb388ff, minor: true },
-    { name: 'Semicuadratura', angle: 45,  orb: 1.5, cls: 'min', color: 0xb388ff, minor: true },
-    { name: 'Quintil',        angle: 72,  orb: 1.2, cls: 'min', color: 0xb388ff, minor: true },
-    { name: 'Semisextil',     angle: 30,  orb: 1.2, cls: 'min', color: 0xb388ff, minor: true }
+    { name: 'Quincuncio',       sym: '⚻', angle: 150, orb: 2.0, cls: 'min', color: 0xb388ff, minor: true },
+    { name: 'Sesquicuadratura', sym: '⚼', angle: 135, orb: 1.5, cls: 'min', color: 0xb388ff, minor: true },
+    { name: 'Semicuadratura',   sym: '∠', angle: 45,  orb: 1.5, cls: 'min', color: 0xb388ff, minor: true },
+    { name: 'Quintil',          sym: 'Q', angle: 72,  orb: 1.2, cls: 'min', color: 0xb388ff, minor: true },
+    { name: 'Semisextil',       sym: '⚺', angle: 30,  orb: 1.2, cls: 'min', color: 0xb388ff, minor: true }
   ];
 
   // Compara dos conjuntos de longitudes {planeta: grados} y devuelve aspectos.

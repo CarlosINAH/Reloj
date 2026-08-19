@@ -57,6 +57,9 @@ embebido (CSS + librerías + módulos) para compartir o abrir sin la carpeta
 | **Motor de interpretaciones** | ✅ Significados de planetas, signos, casas y aspectos, con lecturas diferenciadas para la **carta natal** y para los **tránsitos**. |
 | **Aspectos mayores y menores** | ✅ Mayores (conjunción, oposición, cuadratura, trígono, sextil) y **menores** (semisextil, semicuadratura, quintil, sesquicuadratura, quincuncio), con líneas más tenues y opción para ocultarlos. |
 | **Signo solar al centro** | ✅ En el centro de la carta aparece el **Sol** del consultante con su signo y una descripción de su **luz** y su **sombra**. |
+| **Símbolos con nombre** | ✅ Glifos astrológicos monocromos (no emoji) acompañados del **nombre** de cada planeta y signo en la escena. |
+| **Casas · signos · planetas** | ✅ Panel compacto: el signo en cúspide y los planetas de cada una de las 12 casas, de un vistazo. |
+| **Panel de aspectos interactivo** | ✅ Panel aparte con un **símbolo por tipo de aspecto** (☌ ☍ □ △ ⚹ y menores); haz clic para mostrar u ocultar cada uno en la lista y en la escena 3D. |
 | **Control de tiempo** | ✅ Reproducción en tiempo real o acelerada (hora/día/semana/mes por segundo) y botón «Ahora». |
 | **Guardar y compartir** | ✅ La carta se guarda en el navegador (localStorage) y se codifica en la URL: el botón «🔗 Compartir» copia un enlace que reabre tu carta ya calculada. |
 

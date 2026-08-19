@@ -43,22 +43,52 @@
   }
 
   // --------- Sprites de texto (glifos y etiquetas) ----------
+  var VS = String.fromCharCode(0xFE0E); // fuerza presentación de TEXTO (no emoji)
+  // Fuente de símbolos astrológicos monocromos (no emoji).
+  var GLYPH_FONT = '"Noto Sans Symbols2", "Segoe UI Symbol", "Apple Symbols", "DejaVu Sans", serif';
+
   function textSprite(text, color, px) {
     px = px || 66;
     var c = document.createElement('canvas');
     c.width = 128; c.height = 128;
     var ctx = c.getContext('2d');
-    ctx.font = 'Bold ' + px + 'px "Segoe UI Symbol", "Noto Sans Symbols2", system-ui, sans-serif';
+    ctx.font = px + 'px ' + GLYPH_FONT;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.shadowColor = 'rgba(0,0,0,0.9)';
     ctx.shadowBlur = 6;
     ctx.fillStyle = color;
-    ctx.fillText(text, 64, 68);
+    ctx.fillText(text + VS, 64, 68);
     var tex = new THREE.CanvasTexture(c);
     tex.anisotropy = 4;
     var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
     sp.renderOrder = 5;
+    return sp;
+  }
+
+  // Etiqueta elegante: glifo grande + nombre debajo (una sola textura).
+  function labelSprite(glyph, name, color) {
+    var W = 256, H = 150;
+    var c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    var ctx = c.getContext('2d');
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0,0,0,0.95)';
+    ctx.shadowBlur = 6;
+    // Glifo
+    ctx.font = '86px ' + GLYPH_FONT;
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = color;
+    ctx.fillText(glyph + VS, W / 2, 62);
+    // Nombre
+    ctx.font = '600 34px "Segoe UI", system-ui, sans-serif';
+    ctx.fillStyle = '#e8ecf7';
+    ctx.fillText(name, W / 2, 126);
+    var tex = new THREE.CanvasTexture(c);
+    tex.anisotropy = 4;
+    var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+    sp.renderOrder = 6;
+    sp.userData.ratio = W / H;
     return sp;
   }
 
@@ -151,9 +181,9 @@
         new THREE.LineBasicMaterial({ color: 0x4a4f80 })
       );
       zodiacGroup.add(line);
-      var sp = textSprite(sign.glyph, sign.color, 70);
+      var sp = labelSprite(sign.glyph, sign.name, sign.color);
       sp.position.copy(pointOnPlane(mid, (Z_INNER + Z_OUTER) / 2, 2.5));
-      sp.scale.set(7.5, 7.5, 1);
+      sp.scale.set(10, 5.9, 1);
       zodiacGroup.add(sp);
     });
     scene.add(zodiacGroup);
@@ -178,9 +208,9 @@
       scene.add(mesh);
       pickables.push(mesh);
 
-      var label = textSprite(Data.planetGlyph(p.name), '#ffffff', 60);
-      label.scale.set(4.4, 4.4, 1);
-      label.position.set(0, p.size + 2.6, 0);
+      var label = labelSprite(Data.planetGlyph(p.name), p.name, '#ffffff');
+      label.scale.set(9, 5.3, 1);
+      label.position.set(0, p.size + 4.2, 0);
       mesh.add(label);
 
       planetObjs[p.name] = {
@@ -203,10 +233,9 @@
   }
 
   function setLabelColor(obj, color) {
-    var glyph = Data.planetGlyph(obj.spec.name);
     if (obj._labelColor === color) return;
     obj._labelColor = color;
-    var sp = textSprite(glyph, color, 60);
+    var sp = labelSprite(Data.planetGlyph(obj.spec.name), obj.spec.name, color);
     obj.label.material.map = sp.material.map;
     obj.label.material.needsUpdate = true;
   }
