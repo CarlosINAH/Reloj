@@ -10,6 +10,9 @@
 
   <div id="canvas-container"></div>
 
+  <!-- Signo solar del consultante, anclado al centro de la carta -->
+  <div id="center-hub"></div>
+
   <!-- Aviso si faltan librerías -->
   <div id="lib-error"></div>
 
@@ -109,11 +112,14 @@
     <div class="panel-content">
       <div class="section-title">
         <span id="aspects-title">Aspectos Tránsito → Natal</span>
-        <select id="transit-filter" style="width:auto; padding:2px 4px; font-size:0.68rem;">
-          <option value="slow">Tránsitos: lentos</option>
-          <option value="all">Tránsitos: todos</option>
-          <option value="natal">Aspectos natales</option>
-        </select>
+        <span style="display:flex; gap:8px; align-items:center;">
+          <label class="mini-check"><input type="checkbox" id="minor-toggle" checked> menores</label>
+          <select id="transit-filter" style="width:auto; padding:2px 4px; font-size:0.68rem;">
+            <option value="slow">Tránsitos: lentos</option>
+            <option value="all">Tránsitos: todos</option>
+            <option value="natal">Aspectos natales</option>
+          </select>
+        </span>
       </div>
       <div id="transit-aspects-container" style="display:flex; flex-direction:column; gap:6px;"></div>
     </div>

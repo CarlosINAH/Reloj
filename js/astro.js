@@ -165,16 +165,23 @@
 
   // --------------------------- Aspectos ---------------------------------
   var ASPECT_TYPES = [
-    { name: 'Conjunción', angle: 0,   orb: 6, cls: 'conj', color: 0xffe600 },
-    { name: 'Oposición',  angle: 180, orb: 6, cls: 'opp',  color: 0xff3344 },
-    { name: 'Cuadratura', angle: 90,  orb: 5, cls: 'sq',   color: 0xff6600 },
-    { name: 'Trígono',    angle: 120, orb: 5, cls: 'tri',  color: 0x00ffcc },
-    { name: 'Sextil',     angle: 60,  orb: 4, cls: 'sex',  color: 0x00d4ff }
+    // Mayores
+    { name: 'Conjunción', angle: 0,   orb: 6,   cls: 'conj', color: 0xffe600, minor: false },
+    { name: 'Oposición',  angle: 180, orb: 6,   cls: 'opp',  color: 0xff3344, minor: false },
+    { name: 'Cuadratura', angle: 90,  orb: 5,   cls: 'sq',   color: 0xff6600, minor: false },
+    { name: 'Trígono',    angle: 120, orb: 5,   cls: 'tri',  color: 0x00ffcc, minor: false },
+    { name: 'Sextil',     angle: 60,  orb: 4,   cls: 'sex',  color: 0x00d4ff, minor: false },
+    // Menores (orbes pequeños, líneas más tenues)
+    { name: 'Quincuncio',     angle: 150, orb: 2.0, cls: 'min', color: 0xb388ff, minor: true },
+    { name: 'Sesquicuadratura', angle: 135, orb: 1.5, cls: 'min', color: 0xb388ff, minor: true },
+    { name: 'Semicuadratura', angle: 45,  orb: 1.5, cls: 'min', color: 0xb388ff, minor: true },
+    { name: 'Quintil',        angle: 72,  orb: 1.2, cls: 'min', color: 0xb388ff, minor: true },
+    { name: 'Semisextil',     angle: 30,  orb: 1.2, cls: 'min', color: 0xb388ff, minor: true }
   ];
 
   // Compara dos conjuntos de longitudes {planeta: grados} y devuelve aspectos.
   // Si sameSet es true (aspectos internos) evita duplicados y auto-pares.
-  function findAspects(setA, setB, sameSet) {
+  function findAspects(setA, setB, sameSet, includeMinor) {
     var out = [];
     var keysA = Object.keys(setA), keysB = Object.keys(setB);
     keysA.forEach(function (a) {
@@ -185,6 +192,7 @@
         if (diff > 180) diff = 360 - diff;
         for (var k = 0; k < ASPECT_TYPES.length; k++) {
           var t = ASPECT_TYPES[k];
+          if (t.minor && !includeMinor) continue;
           var orbUsed = Math.abs(diff - t.angle);
           if (orbUsed <= t.orb) {
             out.push({ a: a, b: b, type: t, orb: orbUsed });

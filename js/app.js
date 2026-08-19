@@ -124,6 +124,7 @@
     };
 
     renderNatalGrid();
+    updateSunHub();
     Scene.setNatalMarkers(natalT.positions);
     Scene.setHouses(houses);
     refreshScene();
@@ -214,6 +215,22 @@
     return s.glyph + ' ' + dms.d + '°' + String(dms.m).padStart(2, '0') + "'";
   }
 
+  // Signo solar del consultante en el centro de la carta, con luz y sombra.
+  function updateSunHub() {
+    var hub = $('center-hub');
+    if (!state.natal) { hub.style.display = 'none'; return; }
+    var lon = state.natal.positions['Sol'];
+    var s = Data.SIGNS[Astro.signIndex(lon)];
+    var dms = Astro.formatDMS(lon);
+    hub.innerHTML =
+      '<div class="glyph" style="color:' + s.color + '">' + s.glyph + '</div>' +
+      '<div class="sun-name">Sol en ' + s.name + '</div>' +
+      '<div class="sun-sub">' + dms.d + '° · ' + s.element + ' ' + s.quality + '</div>' +
+      '<div class="ls"><span><b>Luz:</b> ' + s.light + '.</span><br>' +
+      '<span class="sh"><b>Sombra:</b> ' + s.shadow + '.</span></div>';
+    hub.style.display = 'block';
+  }
+
   // ---------------- Panel de aspectos (según el modo de vista) ----------
   // En modo tránsito: aspectos Tránsito → Natal y qué casa natal activan.
   // En modo natal: aspectos internos de la carta natal.
@@ -237,6 +254,8 @@
     });
   }
 
+  function minorOn() { return $('minor-toggle').checked; }
+
   function buildTransitAspects(container, titleEl) {
     if (titleEl) titleEl.textContent = 'Aspectos Tránsito → Natal';
     var filter = $('transit-filter').value;
@@ -244,7 +263,7 @@
     var transitPlanets = Astro.BODIES.filter(function (p) { return filter === 'all' || slowSet[p]; });
     var tSet = {};
     transitPlanets.forEach(function (p) { tSet[p] = transit.positions[p]; });
-    var aspects = Astro.findAspects(tSet, state.natal.positions, false);
+    var aspects = Astro.findAspects(tSet, state.natal.positions, false, minorOn());
     var cusps = state.natal.houses.cusps;
     var html = '', specs = [];
     aspects.forEach(function (asp, i) {
@@ -258,7 +277,7 @@
         '<div class="hint" style="margin-top:3px">' + Data.interpretAspect(t.name, tP, nP, true) + '</div>' +
         '<div class="house-badge">Activa ' + (hInfo ? hInfo.name : 'Casa ' + house) + '</div>' +
         '</div>';
-      specs.push({ id: id, a: tP, b: nP, kindA: 'transit', kindB: 'natal', color: t.color });
+      specs.push({ id: id, a: tP, b: nP, kindA: 'transit', kindB: 'natal', color: t.color, minor: t.minor });
     });
     container.innerHTML = html || '<div class="hint">No hay aspectos mayores activos bajo este filtro.</div>';
     lastTransitNatalSpecs = specs;
@@ -267,7 +286,7 @@
 
   function buildNatalAspects(container, titleEl) {
     if (titleEl) titleEl.textContent = 'Aspectos Natales';
-    var aspects = Astro.findAspects(state.natal.positions, state.natal.positions, true);
+    var aspects = Astro.findAspects(state.natal.positions, state.natal.positions, true, minorOn());
     var cusps = state.natal.houses.cusps;
     var html = '', specs = [];
     aspects.forEach(function (asp, i) {
@@ -282,7 +301,7 @@
         '<div class="house-badge">' + aP + ' C' + ha + ' · ' + bP + ' C' + hb + '</div>' +
         '</div>';
       // Líneas entre los marcadores natales fijos (rueda interior).
-      specs.push({ id: id, a: aP, b: bP, kindA: 'natal', kindB: 'natal', color: t.color });
+      specs.push({ id: id, a: aP, b: bP, kindA: 'natal', kindB: 'natal', color: t.color, minor: t.minor });
     });
     container.innerHTML = html || '<div class="hint">Sin aspectos mayores entre los planetas natales.</div>';
     Scene.setAspectLines(specs);
@@ -462,6 +481,7 @@
   // ------------------------------ Wiring --------------------------------
   function init() {
     Scene.init($('canvas-container'), { onHover: onHover, onSelect: onSelect });
+    Scene.attachHub($('center-hub'));
 
     transit = computeTransit(state.simTime);
     Scene.setTransitLongitudes(transit.positions, transit.retro);
@@ -477,6 +497,7 @@
     $('btn-calculate').addEventListener('click', onCalculate);
     $('btn-share').addEventListener('click', shareLink);
     $('transit-filter').addEventListener('change', rebuildAspects);
+    $('minor-toggle').addEventListener('change', rebuildAspects);
     $('house-system').addEventListener('change', function () {
       state.houseSystem = $('house-system').value;
       if (state.natal) onCalculate();
