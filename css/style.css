@@ -158,6 +158,21 @@ td.direct { color: #00ffcc; }
 }
 
 /* ---------- Barra inferior ---------- */
+/* ---------- Pestañas de sección (Natal / Tránsito) ---------- */
+#section-tabs {
+  position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+  z-index: 15; display: flex; border-radius: 22px; overflow: hidden;
+  background: rgba(10, 11, 22, 0.9); border: 1px solid rgba(255,255,255,0.2);
+  backdrop-filter: blur(10px); box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+}
+.sec-tab {
+  background: transparent; color: #aeb7cf; border: none; cursor: pointer;
+  padding: 9px 20px; font-size: 0.82rem; font-weight: 600; letter-spacing: 0.02em;
+  transition: all 0.2s; width: auto;
+}
+.sec-tab:hover { color: #fff; }
+.sec-tab.active { color: #fff; background: linear-gradient(90deg, rgba(0,212,255,0.30), rgba(179,136,255,0.30)); }
+
 #controls-bar {
   position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
   background: rgba(10, 11, 22, 0.9); border: 1px solid rgba(255,255,255,0.2);
@@ -236,4 +251,8 @@ td.direct { color: #00ffcc; }
 
   #tooltip { max-width: calc(100vw - 24px); }
   .natal-grid { grid-template-columns: 1fr; }
+
+  /* Pestañas de sección sobre la barra de controles */
+  #section-tabs { top: auto; bottom: 62px; }
+  .sec-tab { padding: 8px 16px; font-size: 0.78rem; }
 }

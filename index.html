@@ -20,38 +20,46 @@
   <div id="tooltip"></div>
   <div id="toast"></div>
 
+  <!-- Selector de sección: Carta Natal / Tránsito actual -->
+  <div id="section-tabs">
+    <button class="sec-tab active" data-view="natal">☾ Carta Natal</button>
+    <button class="sec-tab" data-view="transit">☄ Tránsito actual</button>
+  </div>
+
   <!-- Barra inferior: control de vista y tiempo -->
   <div id="controls-bar">
     <select id="view-mode-select" title="Ángulo de cámara">
-      <option value="chart">🜨 Carta (cenital)</option>
-      <option value="3d">🌐 Vista 3D</option>
+      <option value="chart">Carta (cenital)</option>
+      <option value="3d">Vista 3D</option>
     </select>
-    <div class="divider"></div>
-    <button class="btn btn-ghost mini-btn" id="btn-toggle-orbit">▶ Reproducir</button>
-    <select id="speed-select" title="Velocidad de simulación">
-      <option value="realtime">Tiempo real</option>
-      <option value="hour">1 h / s</option>
-      <option value="day">1 día / s</option>
-      <option value="week">1 sem / s</option>
-      <option value="month">1 mes / s</option>
-    </select>
-    <button class="btn btn-ghost mini-btn" id="btn-now">Ahora</button>
-    <div class="divider"></div>
-    <span id="sim-clock"></span>
+    <span id="time-controls" style="display:flex; gap:12px; align-items:center;">
+      <div class="divider"></div>
+      <button class="btn btn-ghost mini-btn" id="btn-toggle-orbit">▶ Reproducir</button>
+      <select id="speed-select" title="Velocidad de simulación">
+        <option value="realtime">Tiempo real</option>
+        <option value="hour">1 h / s</option>
+        <option value="day">1 día / s</option>
+        <option value="week">1 sem / s</option>
+        <option value="month">1 mes / s</option>
+      </select>
+      <button class="btn btn-ghost mini-btn" id="btn-now">Ahora</button>
+      <div class="divider"></div>
+      <span id="sim-clock"></span>
+    </span>
   </div>
 
-  <!-- Panel izquierdo: efemérides -->
+  <!-- Panel izquierdo: posiciones (natal o tránsito según la sección) -->
   <div id="left-panel" class="ui-window">
     <div class="panel-header header-left">
-      <span>EFEMÉRIDES &amp; ESTADO PLANETARIO</span><span class="chev">▼</span>
+      <span id="left-panel-title">POSICIONES NATALES</span><span class="chev">▼</span>
     </div>
     <div class="panel-content">
-      <div class="section-title">Posición · Casa · Directo/Retro</div>
+      <div class="section-title" id="left-section-title">Planeta · Signo · Casa · Directo/Retro</div>
       <table>
         <thead><tr><th>Planeta</th><th>Signo</th><th>Casa</th><th>Mov.</th></tr></thead>
         <tbody id="transit-tbody"></tbody>
       </table>
-      <div class="hint">Posiciones geocéntricas eclípticas de fecha (Astronomy Engine · VSOP87/ELP). La columna «Casa» aparece al calcular tu carta natal.</div>
+      <div class="hint" id="left-panel-hint">Posiciones geocéntricas eclípticas de fecha (Astronomy Engine · VSOP87/ELP).</div>
     </div>
   </div>
 
@@ -62,11 +70,7 @@
     </div>
     <div class="panel-content">
       <div class="section-title">
-        <span id="aspects-title">Aspectos</span>
-        <select id="aspect-scope" style="width:auto; padding:2px 4px; font-size:0.68rem;">
-          <option value="natal">Natales</option>
-          <option value="transit">Tránsito → Natal</option>
-        </select>
+        <span id="aspects-title">Aspectos natales</span>
       </div>
       <div class="hint">Haz clic en cada símbolo para mostrar u ocultar ese aspecto.</div>
       <div id="aspect-chips" class="aspect-chips glyphs"></div>

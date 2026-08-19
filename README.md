@@ -45,6 +45,21 @@ embebido (CSS + librerías + módulos) para compartir o abrir sin la carpeta
 4. Cambia entre **Tránsitos Actuales** y **Posiciones Natales**, y usa
    **Reproducir** + velocidad para ver el cielo moverse.
 
+## Dos secciones
+
+La app se divide en dos pestañas para no mezclar información:
+
+- **☾ Carta Natal** — tu carta de nacimiento **fija**: el panel izquierdo muestra
+  tus *posiciones natales*, los aspectos son los **natales** y los planetas de la
+  escena están en sus grados de nacimiento.
+- **☄ Tránsito actual** — el **cielo de hoy**: el panel izquierdo muestra las
+  posiciones del momento (que cambian con el tiempo), los aspectos son
+  **Tránsito → Natal** y sus líneas se **iluminan** en la carta. Aquí se activan
+  los controles de tiempo (reproducir, velocidad, «Ahora»).
+
+> Nota: la Luna (y los planetas rápidos) cambian de signo constantemente en el
+> *tránsito*; tu Luna **natal** es la de la sección Carta Natal.
+
 ## Qué se implementó
 
 | Objetivo | Estado |
