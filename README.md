@@ -51,7 +51,8 @@ embebido (CSS + librerías + módulos) para compartir o abrir sin la carpeta
 |---|---|
 | **Efemérides de alta precisión** | ✅ Astronomy Engine (VSOP87 / ELP). Longitudes eclípticas geocéntricas *de fecha*, en grados-minutos-segundos, con detección real de retrogradación. |
 | **Casas reales desiguales** | ✅ **Placidus** por iteración de semiarcos (validado), más **Porphyry**, **Casas Iguales** y **Signo Completo**. Ascendente y Medio Cielo calculados por longitud/latitud. |
-| **Búsqueda geográfica (geocoding)** | ✅ Buscador de ciudades vía Open-Meteo → autocompleta lat/lon y zona horaria IANA. El huso convierte la hora de nacimiento a UTC respetando el horario de verano histórico. |
+| **Buscador de lugar** | ✅ Solo eliges tu ciudad (las coordenadas quedan internas): lista integrada que funciona **sin conexión** (muchas ciudades de México + capitales) más búsqueda en línea opcional. Por defecto: **Ciudad de México**. El huso convierte la hora a UTC respetando el horario de verano histórico. |
+| **Vista tipo carta + móvil** | ✅ Cámara cenital que se lee como una carta natal (bi-rueda: natal fijo + tránsito en movimiento, juntos) y opción 3D. Interfaz adaptada a móvil con paneles colapsables. |
 | **Interacción 3D (raycasting)** | ✅ Hover y clic sobre planetas natales y de tránsito despliegan una tarjeta con signo, casa activada e interpretación didáctica. |
 | **Motor de interpretaciones** | ✅ Significados de planetas, signos, casas y aspectos, con lecturas diferenciadas para la **carta natal** y para los **tránsitos**. |
 | **Control de tiempo** | ✅ Reproducción en tiempo real o acelerada (hora/día/semana/mes por segundo) y botón «Ahora». |

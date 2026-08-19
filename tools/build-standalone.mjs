@@ -14,7 +14,7 @@ const body = html.slice(html.indexOf('<body>') + 6, html.indexOf('<!-- Librería
 
 const js = [
   'vendor/three.min.js', 'vendor/OrbitControls.js', 'vendor/astronomy.browser.min.js',
-  'js/data.js', 'js/astro.js', 'js/scene.js', 'js/app.js'
+  'js/cities.js', 'js/data.js', 'js/astro.js', 'js/scene.js', 'js/app.js'
 ].map((f) => '<script>\n' + rd(f) + '\n</script>').join('\n');
 
 const out = `<!DOCTYPE html>
