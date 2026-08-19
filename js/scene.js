@@ -306,22 +306,26 @@
     housesGroup.add(lbl);
   }
 
-  // Reemplaza las líneas de aspecto. specs: [{a, b, kindA, kindB, color, minor}]
+  // Reemplaza las líneas de aspecto. specs: [{a, b, kindA, kindB, color, minor, glow}]
   function setAspectLines(specs) {
     aspectGroup.clear();
     aspectLines = [];
     specs.forEach(function (s) {
       var geom = new THREE.BufferGeometry();
       geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
-      var base = s.minor ? 0.2 : 0.45; // los menores se dibujan más tenues
+      // En la sección de tránsito (glow) las líneas se iluminan y laten.
+      var base = s.glow ? (s.minor ? 0.55 : 0.9) : (s.minor ? 0.2 : 0.45);
       var line = new THREE.Line(geom, new THREE.LineBasicMaterial({
-        color: s.color, transparent: true, opacity: base
+        color: s.color, transparent: true, opacity: base,
+        blending: s.glow ? THREE.AdditiveBlending : THREE.NormalBlending, depthWrite: false
       }));
       line.userData.id = s.id;
       line.userData.base = base;
+      line.userData.glow = !!s.glow;
+      line.userData.hi = false;
       aspectGroup.add(line);
       aspectLines.push({
-        line: line,
+        line: line, phase: Math.random() * Math.PI * 2,
         getA: endpointGetter(s.a, s.kindA),
         getB: endpointGetter(s.b, s.kindB)
       });
@@ -338,6 +342,7 @@
   function highlightAspect(id, on) {
     aspectLines.forEach(function (al) {
       if (al.line.userData.id === id) {
+        al.line.userData.hi = on;
         al.line.material.opacity = on ? 1.0 : al.line.userData.base;
       }
     });
@@ -407,7 +412,8 @@
     earthMesh.rotation.y += 0.0025;
     if (starField) starField.rotation.y += 0.00006;
 
-    // Actualiza extremos de las líneas de aspecto.
+    // Actualiza extremos de las líneas de aspecto y el latido de las iluminadas.
+    var tp = performance.now() * 0.0022;
     aspectLines.forEach(function (al) {
       var p1 = al.getA(), p2 = al.getB();
       if (!p1 || !p2) return;
@@ -415,6 +421,10 @@
       arr[0] = p1.x; arr[1] = p1.y; arr[2] = p1.z;
       arr[3] = p2.x; arr[4] = p2.y; arr[5] = p2.z;
       al.line.geometry.attributes.position.needsUpdate = true;
+      if (al.line.userData.glow && !al.line.userData.hi) {
+        var b = al.line.userData.base;
+        al.line.material.opacity = b * (0.72 + 0.28 * (0.5 + 0.5 * Math.sin(tp + al.phase)));
+      }
     });
 
     controls.update();

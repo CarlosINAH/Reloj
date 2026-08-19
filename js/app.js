@@ -29,7 +29,8 @@
     simTime: new Date(),
     playing: false,
     speed: 'realtime',     // realtime | hour | day | week | month
-    aspectScope: 'natal',  // natal | transit  (panel de aspectos)
+    view: 'natal',         // natal | transit  (sección principal)
+    aspectScope: 'natal',  // sigue a la sección
     natal: null            // { positions, retro, houses, meta }
   };
   var transit = { positions: {}, retro: {}, speed: {} };
@@ -53,18 +54,36 @@
 
   function esc(s) { return (s || '').replace(/"/g, '&quot;'); }
 
-  // --------------------- Tabla de efemérides (panel izq) ----------------
-  function refreshEphemerisTable() {
+  // ------ Tabla del panel izquierdo: natal o tránsito según la sección ----
+  function refreshPlanetTable() {
     var tbody = $('transit-tbody');
-    var rows = '';
+    var natalView = state.view === 'natal';
+
+    if (natalView) {
+      $('left-panel-title').textContent = 'POSICIONES NATALES';
+      $('left-section-title').textContent = 'Tu carta de nacimiento (fija)';
+      $('left-panel-hint').textContent = 'Posiciones de los planetas el día que naciste.';
+      if (!state.natal) {
+        tbody.innerHTML = '<tr><td colspan="4" style="padding:8px;color:#8895b5;font-size:0.72rem;">Calcula tu carta natal para ver tus posiciones.</td></tr>';
+        return;
+      }
+    } else {
+      $('left-panel-title').textContent = 'TRÁNSITO ACTUAL · CIELO DE HOY';
+      $('left-section-title').textContent = 'Posiciones del cielo en este momento';
+      $('left-panel-hint').textContent = 'Cambian con el tiempo. La columna «Casa» es la casa natal que activan.';
+    }
+
+    var src = natalView ? state.natal.positions : transit.positions;
+    var retroSrc = natalView ? state.natal.retro : transit.retro;
     var cusps = state.natal ? state.natal.houses.cusps : null;
+    var rows = '';
     Astro.BODIES.forEach(function (b) {
-      var lon = transit.positions[b];
+      var lon = src[b];
       var s = Data.SIGNS[Astro.signIndex(lon)];
       var dms = Astro.formatDMS(lon);
       var house = cusps ? Astro.houseOf(lon, cusps) : null;
-      var retro = transit.retro[b];
-      var tip = esc(Data.interpretTransit(b, s.name, house));
+      var retro = retroSrc[b];
+      var tip = esc(natalView ? Data.interpretNatal(b, s.name, house) : Data.interpretTransit(b, s.name, house));
       rows += '<tr title="' + tip + '">' +
         '<td><strong>' + Data.planetGlyph(b) + ' ' + b + '</strong></td>' +
         '<td>' + s.glyph + ' ' + dms.d + '°' + String(dms.m).padStart(2, '0') + "' <small>" + s.name + '</small></td>' +
@@ -128,8 +147,9 @@
     renderHousesSummary();
     Scene.setNatalMarkers(natalT.positions);
     Scene.setHouses(houses);
-    refreshScene();
-    refreshEphemerisTable();
+    applyScene();
+    refreshPlanetTable();
+    rebuildAspects();
     saveInputs();
     toast('Carta natal calculada · ' + systemName(state.houseSystem), true);
   }
@@ -274,6 +294,7 @@
     // Filtra por tipos activados.
     var shown = all.filter(function (a) { return aspectEnabled[a.type.name]; });
     var cusps = state.natal.houses.cusps;
+    var glow = isTransit; // en la sección de tránsito, las líneas se iluminan
     var html = '', specs = [];
     shown.forEach(function (asp, i) {
       var id = 'asp-' + i, t = asp.type;
@@ -287,7 +308,7 @@
           ' <span class="orb">(' + asp.orb.toFixed(1) + '°)</span>' +
           '<div class="hint" style="margin-top:3px">' + Data.interpretAspect(t.name, tP, nP, true) + '</div>' +
           '<div class="house-badge">Activa Casa ' + house + '</div></div>';
-        spec = { id: id, a: tP, b: nP, kindA: 'transit', kindB: 'natal', color: t.color, minor: t.minor };
+        spec = { id: id, a: tP, b: nP, kindA: 'transit', kindB: 'natal', color: t.color, minor: t.minor, glow: glow };
       } else {
         var aP = asp.a, bP = asp.b;
         var ha = Astro.houseOf(state.natal.positions[aP], cusps);
@@ -298,7 +319,8 @@
           ' <span class="orb">(' + asp.orb.toFixed(1) + '°)</span>' +
           '<div class="hint" style="margin-top:3px">' + Data.interpretAspect(t.name, aP, bP, false) + '</div>' +
           '<div class="house-badge">' + aP + ' C' + ha + ' · ' + bP + ' C' + hb + '</div></div>';
-        spec = { id: id, a: aP, b: bP, kindA: 'natal', kindB: 'natal', color: t.color, minor: t.minor };
+        // En la sección natal las esferas SON los planetas natales (kind 'transit').
+        spec = { id: id, a: aP, b: bP, kindA: 'transit', kindB: 'transit', color: t.color, minor: t.minor, glow: glow };
       }
       html += card; specs.push(spec);
     });
@@ -357,11 +379,36 @@
     box.innerHTML = html;
   }
 
-  // -------- Bi-rueda: tránsito (móvil) + natal (fijo), siempre juntos -----
-  function refreshScene() {
-    Scene.setTransitLongitudes(transit.positions, transit.retro);
-    Scene.setNatalMarkersVisible(!!state.natal);
-    rebuildAspects(); // reconstruye panel + líneas 3D
+  // --------- Secciones: Carta Natal vs Tránsito actual -------------------
+  // Natal: las esferas son la carta natal (fija). Tránsito: esferas en
+  // movimiento (cielo de hoy) + marcadores natales fijos (bi-rueda).
+  function applyScene() {
+    if (state.view === 'natal') {
+      if (state.natal) Scene.setTransitLongitudes(state.natal.positions, state.natal.retro);
+      else Scene.setTransitLongitudes(transit.positions, transit.retro);
+      Scene.setNatalMarkersVisible(false);
+    } else {
+      Scene.setTransitLongitudes(transit.positions, transit.retro);
+      Scene.setNatalMarkersVisible(!!state.natal);
+    }
+  }
+
+  function setView(view) {
+    state.view = view;
+    state.aspectScope = (view === 'transit') ? 'transit' : 'natal';
+    Array.prototype.forEach.call(document.querySelectorAll('.sec-tab'), function (t) {
+      t.classList.toggle('active', t.getAttribute('data-view') === view);
+    });
+    // Los controles de tiempo solo tienen sentido en la sección de tránsito.
+    $('time-controls').style.display = (view === 'transit') ? 'flex' : 'none';
+    if (view !== 'transit' && state.playing) {
+      state.playing = false;
+      $('btn-toggle-orbit').textContent = '▶ Reproducir';
+    }
+    applyScene();
+    refreshPlanetTable();
+    rebuildAspects();
+    updateClockReadout();
   }
 
   // --------------------------- Tiempo real ------------------------------
@@ -382,7 +429,7 @@
     if (state.playing) {
       transit = computeTransit(state.simTime);
       Scene.setTransitLongitudes(transit.positions, transit.retro);
-      refreshEphemerisTable();
+      refreshPlanetTable();
       // Reconstruir aspectos con menor frecuencia (cada ~1.5 s).
       if (++aspectTickCounter >= 8) { aspectTickCounter = 0; if (state.natal) rebuildAspects(); }
     }
@@ -534,10 +581,11 @@
     Scene.attachHub($('center-hub'));
 
     transit = computeTransit(state.simTime);
-    Scene.setTransitLongitudes(transit.positions, transit.retro);
-    refreshEphemerisTable();
-    rebuildAspects();
-    updateClockReadout();
+
+    // Pestañas de sección (Natal / Tránsito)
+    Array.prototype.forEach.call(document.querySelectorAll('.sec-tab'), function (t) {
+      t.addEventListener('click', function () { setView(t.getAttribute('data-view')); });
+    });
 
     // Paneles colapsables
     Array.prototype.forEach.call(document.querySelectorAll('.panel-header'), function (h) {
@@ -546,10 +594,6 @@
 
     $('btn-calculate').addEventListener('click', onCalculate);
     $('btn-share').addEventListener('click', shareLink);
-    $('aspect-scope').addEventListener('change', function () {
-      state.aspectScope = this.value;
-      rebuildAspects();
-    });
     $('house-system').addEventListener('change', function () {
       state.houseSystem = $('house-system').value;
       if (state.natal) onCalculate();
@@ -569,8 +613,9 @@
     $('btn-now').addEventListener('click', function () {
       state.simTime = new Date();
       transit = computeTransit(state.simTime);
-      refreshEphemerisTable();
-      refreshScene();
+      applyScene();
+      refreshPlanetTable();
+      rebuildAspects();
       updateClockReadout();
     });
 
@@ -599,6 +644,9 @@
     } else {
       applyDefaultPlace();
     }
+
+    // Inicializa la sección actual (por defecto: Carta Natal).
+    setView(state.view);
   }
 
   init();
