@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clima Astral</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="canvas-container"></div>
+  <div id="lib-error">No se pudieron cargar las librerías. Abre esta página junto a la carpeta <b>vendor/</b>.</div>
+  <div id="tooltip"></div>
+
+  <!-- Título + reloj en vivo -->
+  <div id="topbar">
+    <div class="title">☿ Clima Astral <small>en tiempo real</small></div>
+    <div id="clock"></div>
+  </div>
+
+  <!-- Panel izquierdo: el clima de ahora -->
+  <div id="left-panel" class="ui-window">
+    <div class="panel-header header-left"><span>CLIMA AHORA</span><span class="chev">▼</span></div>
+    <div class="panel-content">
+      <div id="headline"></div>
+      <div class="section-title">Aspectos activos <span class="hint2">(clic = enfocar)</span></div>
+      <div id="aspect-list"></div>
+    </div>
+  </div>
+
+  <!-- Panel derecho: planetas + filtros -->
+  <div id="right-panel" class="ui-window">
+    <div class="panel-header header-right"><span>PLANETAS AHORA</span><span class="chev">▼</span></div>
+    <div class="panel-content">
+      <div id="planet-list" class="glyphs"></div>
+      <div class="section-title">Tipos de aspecto <span class="hint2">(clic para mostrar/ocultar)</span></div>
+      <div id="chips" class="glyphs"></div>
+    </div>
+  </div>
+
+  <!-- Barra inferior -->
+  <div id="controls-bar">
+    <select id="cam-select" title="Cámara">
+      <option value="chart">Carta (cenital)</option>
+      <option value="3d">Vista 3D</option>
+    </select>
+    <select id="speed-select" title="Velocidad">
+      <option value="realtime">Tiempo real</option>
+      <option value="hour">1 h / s</option>
+      <option value="day">1 día / s</option>
+      <option value="week">1 sem / s</option>
+    </select>
+    <span id="focus-chip" title="Quitar foco"><span id="focus-name"></span> ✕</span>
+  </div>
+
+  <script src="../vendor/three.min.js"></script>
+  <script src="../vendor/OrbitControls.js"></script>
+  <script src="../vendor/astronomy.browser.min.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/astro.js"></script>
+  <script src="js/scene.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
