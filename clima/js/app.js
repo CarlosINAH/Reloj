@@ -18,16 +18,17 @@
   };
   Astro.ASPECT_TYPES.forEach(function (t) { state.enabled[t.name] = !t.minor; });
 
-  var sky = { pos: {}, spd: {}, retro: {} };
+  var sky = { pos: {}, spd: {}, retro: {}, helio: {} };
 
   function compute(date) {
-    var pos = {}, spd = {}, retro = {};
+    var pos = {}, spd = {}, retro = {}, helio = {};
     Astro.BODIES.forEach(function (b) {
-      pos[b] = Astro.geoLon(b, date);
+      pos[b] = Astro.geoLon(b, date);       // geocéntrico (para el clima/aspectos)
       spd[b] = Astro.speed(b, date);
       retro[b] = Astro.isRetro(b, date);
     });
-    return { pos: pos, spd: spd, retro: retro };
+    Astro.HELIO.forEach(function (b) { helio[b] = Astro.helioLon(b, date); }); // para el modelo 3D
+    return { pos: pos, spd: spd, retro: retro, helio: helio };
   }
 
   function activeAspects() {
@@ -144,7 +145,7 @@
     if (state.speed === 'realtime') state.simTime = new Date();
     else state.simTime = new Date(state.simTime.getTime() + SPEED_DAYS[state.speed] * dt * 86400000);
     sky = compute(state.simTime);
-    Scene.setLongitudes(sky.pos);
+    Scene.setPositions(sky.helio, sky.pos.Luna);
     // Paneles: refrescar cada ~1.5 s (son cálculos ligeros, pero evitamos parpadeo).
     if (++counter % 3 === 0 || state.speed !== 'realtime') render();
     updateClock();
@@ -159,20 +160,24 @@
   function onHover(name, x, y) {
     var tip = $('tooltip');
     if (!name) { tip.style.display = 'none'; return; }
-    var lon = sky.pos[name], s = Data.signOf(lon), dms = Astro.formatDMS(lon);
-    tip.innerHTML = '<h4>' + Data.glyph(name) + ' ' + name + (sky.retro[name] ? ' <span class="rx">℞</span>' : '') + '</h4>' +
-      '<div class="meta">' + s.glyph + ' ' + dms.text + ' ' + s.name + '</div>' +
-      '<div class="kw">' + Data.PLANETS[name].kw + '</div>';
+    if (name === 'Tierra') {
+      tip.innerHTML = '<h4>⊕ Tierra</h4><div class="kw">Desde aquí observamos el cielo: el clima astral se mide visto desde la Tierra (geocéntrico).</div>';
+    } else {
+      var lon = sky.pos[name], s = Data.signOf(lon), dms = Astro.formatDMS(lon);
+      tip.innerHTML = '<h4>' + Data.glyph(name) + ' ' + name + (sky.retro[name] ? ' <span class="rx">℞</span>' : '') + '</h4>' +
+        '<div class="meta">' + s.glyph + ' ' + dms.text + ' ' + s.name + '</div>' +
+        '<div class="kw">' + Data.PLANETS[name].kw + '</div>';
+    }
     tip.style.display = 'block';
     tip.style.left = Math.min(x + 16, innerWidth - tip.offsetWidth - 12) + 'px';
     tip.style.top = Math.min(y + 16, innerHeight - tip.offsetHeight - 12) + 'px';
   }
-  function onSelect(name) { setFocus(name); }
+  function onSelect(name) { setFocus(name === 'Tierra' ? null : name); }
 
   function init() {
     Scene.init($('canvas-container'), { onHover: onHover, onSelect: onSelect });
     sky = compute(state.simTime);
-    Scene.setLongitudes(sky.pos);
+    Scene.setPositions(sky.helio, sky.pos.Luna);
     render(); updateClock();
 
     $('cam-select').addEventListener('change', function () { Scene.setCameraMode(this.value); });

@@ -1,11 +1,18 @@
 # Clima Astral · en tiempo real
 
-Visor del **clima astrológico en vivo**: muestra el cielo de *ahora* en 3D, con
-los planetas texturizados (imágenes de la NASA) y calcula sus **aspectos**
-(conjunciones, sextiles, cuadraturas, trígonos, oposiciones y aspectos menores)
-en tiempo real.
+Modelo **heliocéntrico** del sistema solar (Sol al centro) en 3D, con los
+planetas texturizados (imágenes de la NASA) orbitando en vivo y la Luna
+orbitando la Tierra. Encima, el **clima astrológico**: calcula los **aspectos**
+(conjunciones, sextiles, cuadraturas, trígonos, oposiciones y menores) que
+forman los planetas **vistos desde la Tierra** (geocéntrico), en tiempo real.
 
 **Sin carta natal, sin fechas, sin formularios.** Solo abres y ves el clima.
+
+> El **modelo 3D** es heliocéntrico (como el de la NASA): el Sol va al centro y
+> los planetas giran a su alrededor. El **clima** (los signos y aspectos de los
+> paneles) es geocéntrico, porque la astrología mide el cielo *visto desde la
+> Tierra*. Por eso la posición 3D de un planeta y su signo no coinciden: son dos
+> marcos de referencia distintos, cada uno correcto.
 
 ![vista](preview.png)
 
@@ -39,9 +46,9 @@ Se publica como sitio estático. En **GitHub Pages** (o cualquier servidor) abre
 
 ```
 index.html · css/style.css
-js/astro.js   efemérides geocéntricas de fecha + aspectos (Astronomy Engine)
+js/astro.js   posiciones geocéntricas (clima) y heliocéntricas (modelo) + aspectos
 js/data.js    signos, planetas y frases clave del clima
-js/scene.js   escena 3D (Three.js): planetas texturizados, aspectos, foco
+js/scene.js   escena 3D heliocéntrica (Three.js): Sol centro, planetas, Luna, aspectos
 js/app.js     bucle en tiempo real, clima, paneles e interacción
 assets/       texturas de planetas (imágenes derivadas de la NASA)
 ../vendor/    Three.js, OrbitControls y Astronomy Engine (compartidos)
