@@ -23,6 +23,14 @@
     return n360(A.Ecliptic(A.GeoVector(A.Body[AE[planet]], date, true)).elon);
   }
 
+  // Longitud eclíptica HELIOCÉNTRICA de fecha (para el modelo Sol-centro).
+  var HELIO = ['Mercurio', 'Venus', 'Tierra', 'Marte', 'Júpiter', 'Saturno', 'Urano', 'Neptuno', 'Plutón'];
+  var AEH = {
+    Mercurio: 'Mercury', Venus: 'Venus', Tierra: 'Earth', Marte: 'Mars', 'Júpiter': 'Jupiter',
+    Saturno: 'Saturn', Urano: 'Uranus', Neptuno: 'Neptune', 'Plutón': 'Pluto'
+  };
+  function helioLon(planet, date) { return n360(A.EclipticLongitude(A.Body[AEH[planet]], date)); }
+
   function speed(planet, date) {
     var dt = 0.25;
     var l1 = geoLon(planet, new Date(date.getTime() - dt * 86400000));
@@ -89,7 +97,8 @@
   }
 
   window.Astro = {
-    BODIES: BODIES, n360: n360, geoLon: geoLon, speed: speed, isRetro: isRetro,
-    signIndex: signIndex, formatDMS: formatDMS, findAspects: findAspects, ASPECT_TYPES: ASPECT_TYPES
+    BODIES: BODIES, HELIO: HELIO, n360: n360, geoLon: geoLon, helioLon: helioLon,
+    speed: speed, isRetro: isRetro, signIndex: signIndex, formatDMS: formatDMS,
+    findAspects: findAspects, ASPECT_TYPES: ASPECT_TYPES
   };
 })();
