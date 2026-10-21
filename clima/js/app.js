@@ -145,7 +145,7 @@
     if (state.speed === 'realtime') state.simTime = new Date();
     else state.simTime = new Date(state.simTime.getTime() + SPEED_DAYS[state.speed] * dt * 86400000);
     sky = compute(state.simTime);
-    Scene.setPositions(sky.helio, sky.pos.Luna);
+    Scene.setPositions(sky.helio, sky.pos.Luna); Scene.setGeo(sky.pos);
     // Paneles: refrescar cada ~1.5 s (son cálculos ligeros, pero evitamos parpadeo).
     if (++counter % 3 === 0 || state.speed !== 'realtime') render();
     updateClock();
@@ -177,7 +177,7 @@
   function init() {
     Scene.init($('canvas-container'), { onHover: onHover, onSelect: onSelect });
     sky = compute(state.simTime);
-    Scene.setPositions(sky.helio, sky.pos.Luna);
+    Scene.setPositions(sky.helio, sky.pos.Luna); Scene.setGeo(sky.pos);
     render(); updateClock();
 
     $('cam-select').addEventListener('change', function () { Scene.setCameraMode(this.value); });
