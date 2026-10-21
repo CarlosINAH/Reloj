@@ -12,8 +12,8 @@
   var GLYPH_FONT = '"Noto Sans Symbols2","Segoe UI Symbol","Apple Symbols",serif';
 
   var scene, camera, renderer, controls, container, loader;
-  var sunMesh, moonMesh, zodiacGroup, orbitsGroup, aspectGroup, starField, sunLight;
-  var planetObjs = {}, aspectLines = [], pickables = [];
+  var sunMesh, moonMesh, zodiacGroup, orbitsGroup, aspectGroup, geoGroup, starField, sunLight;
+  var planetObjs = {}, geoMarkers = {}, aspectLines = [], pickables = [];
   var raycaster, pointer = new THREE.Vector2(), hoverName = null, focusName = null;
   var moonGeoLon = 0, moonCur = 0;
   var cbs = { onHover: function () {}, onSelect: function () {} };
@@ -33,6 +33,7 @@
   var SUN = { size: 8, tex: 'sun.jpg', fb: 0xffcc55 };
   var MOON = { radius: 5.5, size: 0.9, tex: 'moon.jpg', fb: 0xd8d8d8 };
   var Z_INNER = 130, Z_OUTER = 146;
+  var GEO_R = Z_INNER - 8; // radio de los marcadores geocéntricos (en la rueda)
 
   function applyTex(mat, file, fallback) {
     mat.color.set(fallback);
@@ -54,6 +55,18 @@
     var tx = new THREE.CanvasTexture(c); tx.anisotropy = 4;
     var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, transparent: true, depthTest: false }));
     sp.renderOrder = 6; return sp;
+  }
+
+  // Sprite de solo glifo (para los marcadores del zodiaco).
+  function glyphSprite(glyph, color) {
+    var c = document.createElement('canvas'); c.width = 128; c.height = 128;
+    var ctx = c.getContext('2d');
+    ctx.font = '92px ' + GLYPH_FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 6; ctx.fillStyle = color;
+    ctx.fillText(glyph + VS, 64, 66);
+    var tx = new THREE.CanvasTexture(c); tx.anisotropy = 4;
+    var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, transparent: true, depthTest: false }));
+    sp.renderOrder = 7; return sp;
   }
 
   function onPlane(lonDeg, radius, y) {
@@ -80,7 +93,7 @@
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.22)); // tenue: el Sol ilumina
 
-    buildStars(); buildSun(); buildZodiac();
+    buildStars(); buildSun(); buildZodiac(); buildGeoMarkers();
     orbitsGroup = new THREE.Group(); scene.add(orbitsGroup);
     aspectGroup = new THREE.Group(); scene.add(aspectGroup);
     buildPlanets();
@@ -135,6 +148,22 @@
     scene.add(zodiacGroup);
   }
 
+  // Marcadores geocéntricos: dónde está cada astro visto DESDE LA TIERRA (su
+  // signo). Van sobre la rueda; las líneas de aspecto se trazan entre ellos, así
+  // que muestran el ángulo astrológico real.
+  function buildGeoMarkers() {
+    geoGroup = new THREE.Group(); scene.add(geoGroup);
+    Astro.BODIES.forEach(function (name) {
+      var disc = new THREE.Mesh(new THREE.SphereGeometry(0.9, 16, 16),
+        new THREE.MeshBasicMaterial({ color: 0xdfe6ff }));
+      disc.userData = { planet: name };
+      geoGroup.add(disc); pickables.push(disc);
+      var g = glyphSprite(Data.glyph(name), '#ffffff'); g.scale.set(4.6, 4.6, 1);
+      geoGroup.add(g);
+      geoMarkers[name] = { disc: disc, label: g, curLon: 0, targetLon: 0 };
+    });
+  }
+
   function makeRing(file, inner, outer) {
     var geo = new THREE.RingGeometry(inner, outer, 96);
     var pos = geo.attributes.position, uv = geo.attributes.uv, v3 = new THREE.Vector3();
@@ -177,19 +206,19 @@
   }
 
   // ---------------- API ----------------
-  // helio: {planetaES: longitud heliocéntrica}; moonLon: longitud geocéntrica de la Luna.
+  // helio: {planetaES: lon heliocéntrica} para el modelo; geo: {astro: lon
+  // geocéntrica} para los marcadores de la rueda; moonLon: lon geocéntrica Luna.
   function setPositions(helio, moonLon) {
     Object.keys(planetObjs).forEach(function (n) { if (helio[n] != null) planetObjs[n].targetLon = helio[n]; });
     if (moonLon != null) moonGeoLon = moonLon;
     if (sunLight) sunLight.position.set(0, 0, 0);
   }
+  function setGeo(geoLons) {
+    Object.keys(geoMarkers).forEach(function (n) { if (geoLons[n] != null) geoMarkers[n].targetLon = geoLons[n]; });
+  }
 
   function endpoint(name) {
-    return function () {
-      if (name === 'Sol') return sunMesh.position;
-      if (name === 'Luna') return moonMesh ? moonMesh.position : null;
-      return planetObjs[name] ? planetObjs[name].mesh.position : null;
-    };
+    return function () { return geoMarkers[name] ? geoMarkers[name].disc.position : null; };
   }
 
   function setAspectLines(specs) {
@@ -224,6 +253,13 @@
       var nm = m.userData.planet;
       var rel = !focusName || nm === focusName || relatedToFocus(nm);
       m.material.transparent = !rel; m.material.opacity = rel ? 1 : 0.22;
+    });
+    // Marcadores de la rueda.
+    Object.keys(geoMarkers).forEach(function (nm) {
+      var mk = geoMarkers[nm];
+      var rel = !focusName || nm === focusName || relatedToFocus(nm);
+      mk.disc.material.transparent = !rel; mk.disc.material.opacity = rel ? 1 : 0.2;
+      mk.label.material.opacity = rel ? 1 : 0.2;
     });
   }
   function relatedToFocus(n) {
@@ -266,6 +302,15 @@
     if (sunMesh) sunMesh.rotation.y += 0.0012;
     if (starField) starField.rotation.y += 0.00004;
 
+    // Marcadores geocéntricos sobre la rueda.
+    Object.keys(geoMarkers).forEach(function (n) {
+      var m = geoMarkers[n];
+      m.curLon += shortest(m.targetLon * R, m.curLon) * 0.14;
+      var cx = Math.cos(m.curLon), cz = Math.sin(m.curLon);
+      m.disc.position.set(GEO_R * cx, 0, GEO_R * cz);
+      m.label.position.set((GEO_R + 3.6) * cx, 1.2, (GEO_R + 3.6) * cz);
+    });
+
     var tp = performance.now() * 0.0022;
     aspectLines.forEach(function (al) {
       var p1 = al.getA(), p2 = al.getB(); if (!p1 || !p2) return;
@@ -283,7 +328,7 @@
   }
 
   window.Scene = {
-    init: init, setPositions: setPositions, setAspectLines: setAspectLines,
+    init: init, setPositions: setPositions, setGeo: setGeo, setAspectLines: setAspectLines,
     highlightAspect: highlightAspect, setFocus: setFocus, setCameraMode: setCameraMode
   };
 })();

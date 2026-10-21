@@ -9,10 +9,11 @@ forman los planetas **vistos desde la Tierra** (geocéntrico), en tiempo real.
 **Sin carta natal, sin fechas, sin formularios.** Solo abres y ves el clima.
 
 > El **modelo 3D** es heliocéntrico (como el de la NASA): el Sol va al centro y
-> los planetas giran a su alrededor. El **clima** (los signos y aspectos de los
-> paneles) es geocéntrico, porque la astrología mide el cielo *visto desde la
-> Tierra*. Por eso la posición 3D de un planeta y su signo no coinciden: son dos
-> marcos de referencia distintos, cada uno correcto.
+> los planetas giran a su alrededor. En la **rueda exterior** se marcan los
+> planetas *vistos desde la Tierra* (su signo), y las **líneas de aspecto se
+> trazan entre esos marcadores**, así que muestran el ángulo astrológico real
+> (un trígono se ve a 120°, como en una carta). Así conviven el sistema solar
+> real y la lectura astrológica, cada uno en su marco.
 
 ![vista](preview.png)
 
